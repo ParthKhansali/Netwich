@@ -1,0 +1,86 @@
+name: Merge
+options:
+  bundleIdPrefix: dev.parth
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    ARCHS: arm64
+    ONLY_ACTIVE_ARCH: NO
+    ENABLE_HARDENED_RUNTIME: YES
+    GENERATE_INFOPLIST_FILE: NO
+    # Set your Team ID (or run Xcode's automatic signing) before activating the
+    # system extension. A paid Apple Developer Program membership is required.
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Manual
+
+packages:
+  MergeKit:
+    path: .
+
+targets:
+  Merge:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+    dependencies:
+      - package: MergeKit
+        product: MergeKit
+      - target: MergeProxy
+        embed: false
+    settings:
+      base:
+        PRODUCT_NAME: Netwich
+        PRODUCT_BUNDLE_IDENTIFIER: dev.parth.merge
+        INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/Merge.entitlements
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+    postBuildScripts:
+      - name: Embed system extension
+        basedOnDependencyAnalysis: false
+        script: |
+          set -eu
+          SRC="${BUILT_PRODUCTS_DIR}/MergeProxy.systemextension"
+          DST="${CONTENTS_FOLDER_PATH}/Library/System Extensions"
+          if [ ! -d "$SRC" ]; then
+            echo "note: MergeProxy.systemextension not built yet; skipping embed"
+            exit 0
+          fi
+          mkdir -p "$DST"
+          rm -rf "$DST/MergeProxy.systemextension"
+          ditto "$SRC" "$DST/MergeProxy.systemextension"
+
+  MergeProxy:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Proxy
+    dependencies:
+      - package: MergeKit
+        product: MergeKit
+    settings:
+      base:
+        PRODUCT_NAME: MergeProxy
+        PRODUCT_BUNDLE_IDENTIFIER: dev.parth.merge.proxy
+        INFOPLIST_FILE: Proxy/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Proxy/Proxy.entitlements
+        # A NetworkExtension system extension is an app-extension product whose
+        # wrapper is .systemextension, living in Contents/Library/System Extensions.
+        WRAPPER_EXTENSION: systemextension
+        SKIP_INSTALL: YES
+
+schemes:
+  Merge:
+    build:
+      targets:
+        Merge: all
+        MergeProxy: all
+    run:
+      config: Debug

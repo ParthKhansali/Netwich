@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Netwich - Extension Settings</title>
+    <link rel="stylesheet" href="ui.css" />
+    <style>
+      body {
+        background: var(--bg-subtle);
+        display: flex;
+        justify-content: center;
+        padding: 40px 16px 80px;
+      }
+
+      .options-container {
+        width: 100%;
+        max-width: 620px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .options-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .options-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .options-title {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--text-primary);
+      }
+
+      .options-subtitle {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 2px;
+      }
+
+      .section-title {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        margin-left: 6px;
+        margin-bottom: 8px;
+      }
+
+      .settings-card {
+        background: var(--card);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--card-shadow);
+        overflow: hidden;
+      }
+
+      .input-text {
+        font-family: inherit;
+        font-size: 13px;
+        padding: 8px 12px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--text-primary);
+        outline: none;
+      }
+
+      .input-text:focus {
+        border-color: var(--accent);
+      }
+
+      .input-number {
+        width: 70px;
+        text-align: center;
+        font-family: var(--font-mono);
+      }
+
+      .site-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        border-top: 1px solid var(--border);
+      }
+
+      .site-name {
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        color: var(--text-primary);
+      }
+
+      .empty-notice {
+        padding: 24px 14px;
+        text-align: center;
+        font-size: 12.5px;
+        color: var(--text-secondary);
+      }
+
+      .footer-note {
+        text-align: center;
+        font-size: 12px;
+        color: var(--text-tertiary);
+        margin-top: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="options-container">
+      <!-- Header -->
+      <header class="options-header">
+        <img class="options-icon" src="icons/icon-128.png" alt="Netwich" />
+        <div>
+          <h1 class="options-title">Netwich Settings</h1>
+          <div class="options-subtitle">macOS High-Performance Internet Aggregator & Download Engine</div>
+        </div>
+      </header>
+
+      <!-- Engine Status -->
+      <div>
+        <div class="section-title">Engine Bridge Connection</div>
+        <div class="settings-card">
+          <div class="control-row">
+            <div class="control-content">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="status-dot offline" id="status-dot"></span>
+                <span class="control-title" id="connection-label">Checking connection…</span>
+              </div>
+              <span class="control-desc" id="port-label" style="font-family: var(--font-mono);"></span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-secondary" id="btn-check-connection">Refresh</button>
+              <button type="button" class="btn btn-primary" id="btn-open-app">Open App</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Capture Rules -->
+      <div>
+        <div class="section-title">Download Interception</div>
+        <div class="settings-card">
+          <label class="control-row" for="opt-capture" style="cursor: pointer;">
+            <div class="control-content">
+              <span class="control-title">Capture Browser Downloads</span>
+              <span class="control-desc">Interception is enabled globally. Downloads open in Netwich automatically.</span>
+            </div>
+            <div class="switch">
+              <input type="checkbox" id="opt-capture" />
+              <span class="slider"></span>
+            </div>
+          </label>
+
+          <label class="control-row" for="opt-skip-small" style="cursor: pointer;">
+            <div class="control-content">
+              <span class="control-title">Skip Small Downloads</span>
+              <span class="control-desc">Leave small files (images, documents) in the browser to prevent overhead.</span>
+            </div>
+            <div class="switch">
+              <input type="checkbox" id="opt-skip-small" />
+              <span class="slider"></span>
+            </div>
+          </label>
+
+          <div class="control-row">
+            <div class="control-content">
+              <span class="control-title">Minimum File Size Threshold</span>
+              <span class="control-desc">Downloads smaller than this size stay in standard browser downloading.</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <input type="number" class="input-text input-number" id="opt-min-mb" min="1" max="1024" value="5" />
+              <span style="font-size: 13px; color: var(--text-secondary);">MB</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Excluded Domains -->
+      <div>
+        <div class="section-title">Domain Exclusions</div>
+        <div class="settings-card">
+          <div style="padding: 14px; border-bottom: 1px solid var(--border); display: flex; gap: 8px;">
+            <input type="text" class="input-text" id="input-new-site" placeholder="Add domain (e.g. drive.google.com)" style="flex: 1;" />
+            <button type="button" class="btn btn-primary" id="btn-add-site">Add Excluded Site</button>
+          </div>
+          <ul id="sites-list" style="list-style: none; margin: 0; padding: 0;"></ul>
+          <div class="empty-notice" id="no-sites">
+            No exclusions configured. All website downloads will be accelerated by Netwich.
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        Netwich for macOS · Created by Parth Khansali · MIT License
+      </div>
+    </div>
+
+    <script src="options.js"></script>
+  </body>
+</html>

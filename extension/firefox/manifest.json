@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Download with Netwich",
+  "short_name": "Netwich",
+  "version": "1.0.0",
+  "description": "Send compatible downloads to Netwich for parallel, multi-connection downloading.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "Netwich",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "extension@merge.local",
+      "strict_min_version": "121.0"
+    }
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "permissions": ["alarms", "downloads", "contextMenus", "cookies", "storage", "tabs", "notifications"],
+  "host_permissions": ["<all_urls>"]
+}
+

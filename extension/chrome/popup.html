@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Netwich</title>
+    <link rel="stylesheet" href="ui.css" />
+    <style>
+      body {
+        width: 380px;
+        max-height: 580px;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .scroll-container {
+        overflow-y: auto;
+        flex: 1;
+        max-height: 480px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- App Header -->
+    <header class="app-header">
+      <div class="brand">
+        <img class="brand-icon" src="icons/icon-32.png" alt="Netwich" />
+        <div style="display: flex; align-items: center">
+          <span class="brand-title">Netwich</span>
+          <span class="brand-tag">v1.0</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="status-pill" id="status-pill" role="status">
+          <span class="status-dot" id="status-dot"></span>
+          <span id="status-text">Connecting…</span>
+        </div>
+        <button type="button" class="icon-button" id="btn-open-app-header" title="Open Netwich Desktop App">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="scroll-container">
+      <!-- Hero Live Telemetry Banner -->
+      <section class="card hero-card" id="hero-telemetry">
+        <div class="hero-header">
+          <span class="hero-label">Live Combined Speed</span>
+          <span class="hero-subtext" id="live-details">Connecting…</span>
+        </div>
+        <div class="hero-speed" id="live-speed">0.0 B/s</div>
+      </section>
+
+      <!-- Offline Alert Card -->
+      <section class="card offline-card" id="offline-card" hidden>
+        <div class="offline-title">Netwich Desktop is Not Running</div>
+        <div class="offline-desc">Start Netwich to enable multi-adapter bonding and accelerated parallel downloads.</div>
+        <button type="button" class="btn btn-primary" id="btn-open-offline" style="margin-top: 4px;">Launch Netwich App</button>
+      </section>
+
+      <!-- Active Downloads Section -->
+      <section class="download-section" id="section-active" hidden>
+        <div class="download-section-header">
+          <span class="download-section-title">
+            <span>Active Downloads</span>
+            <span class="count-badge" id="active-badge">0</span>
+          </span>
+        </div>
+        <div class="download-list" id="active-downloads-list"></div>
+      </section>
+
+      <!-- Recent Completed Downloads Section -->
+      <section class="download-section" id="section-recent" hidden>
+        <div class="download-section-header">
+          <span class="download-section-title">
+            <span>Recent Downloads</span>
+          </span>
+          <button type="button" class="clear-btn" id="btn-clear-completed">Clear</button>
+        </div>
+        <div class="download-list" id="recent-downloads-list"></div>
+      </section>
+
+      <!-- Empty Downloads State -->
+      <section class="empty-shelf" id="empty-downloads-shelf">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 2px;">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <div class="empty-shelf-title">Ready to Accelerate</div>
+        <div class="empty-shelf-desc">Start downloading any file in your browser to bond all connections together automatically.</div>
+      </section>
+
+      <!-- Settings & Rules Card -->
+      <section class="card" style="padding: 0; overflow: hidden; margin-top: 10px;">
+        <!-- Master Download Interceptor -->
+        <label class="control-row" for="capture" style="cursor: pointer;">
+          <div class="control-content">
+            <span class="control-title">Auto-Accelerate Downloads</span>
+            <span class="control-desc" id="capture-hint">Route browser downloads into Netwich for acceleration</span>
+          </div>
+          <div class="switch">
+            <input type="checkbox" id="capture" />
+            <span class="slider"></span>
+          </div>
+        </label>
+
+        <!-- Current Website Domain Rule -->
+        <label class="control-row" for="site" id="site-row" hidden style="cursor: pointer;">
+          <div class="control-content">
+            <span class="control-title" id="site-host">Current Site</span>
+            <span class="control-desc" id="site-hint">Accelerate downloads from this site</span>
+          </div>
+          <div class="switch">
+            <input type="checkbox" id="site" />
+            <span class="slider"></span>
+          </div>
+        </label>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>Right-click any link to download</span>
+      <div style="display: flex; gap: 12px;">
+        <a class="footer-link" id="btn-open-app-footer">Open Desktop App</a>
+        <a class="footer-link" id="btn-options">Settings</a>
+      </div>
+    </footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

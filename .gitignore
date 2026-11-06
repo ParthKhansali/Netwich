@@ -1,0 +1,16 @@
+.DS_Store
+build/
+.build/
+DerivedData/
+*.xcodeproj
+*.xcworkspace
+*.app
+.freebuff/
+.swiftpm/
+graphify-out/
+xcuserdata/
+.env
+.env.*
+*.provisionprofile
+Secrets/
+research/

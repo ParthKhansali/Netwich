@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Required to activate a system extension from the app. -->
+	<key>com.apple.developer.system-extension.install</key>
+	<true/>
+	<!-- Required on the container app when it hosts a NetworkExtension provider.
+	     Use the *-systemextension value for Developer ID (non-App Store) builds. -->
+	<key>com.apple.developer.networking.networkextension</key>
+	<array>
+		<string>app-proxy-provider-systemextension</string>
+	</array>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.dev.parth.merge</string>
+	</array>
+</dict>
+</plist>

@@ -17,6 +17,7 @@ const openedAt = new Map<number, number>();
 
 const notifiedCompletedIds = new Set<string>();
 let hasInitializedDownloads = false;
+let activeHudDownloadId: string | null = null;
 
 const ICON = { 16: 'icons/icon-16.png', 32: 'icons/icon-32.png' };
 const ICON_OFF = { 16: 'icons/icon-off-16.png', 32: 'icons/icon-off-32.png' };
@@ -106,25 +107,45 @@ async function checkDownloadsProgress() {
     }
   }
 
-  // Update floating HUD on the active browser tab
-  if (downloads.length > 0) {
-    const primary = active[0] || (completed.length > 0 ? completed[completed.length - 1] : null);
-    if (primary) {
+  // Update floating HUD ONLY for active downloads, and send one-shot completion when it finishes
+  if (active.length > 0) {
+    const primary = active[0];
+    activeHudDownloadId = primary.id;
+    await sendToActiveTabs({
+      type: 'NETWICH_DOWNLOAD_PROGRESS',
+      download: {
+        id: primary.id,
+        filename: primary.filename,
+        totalBytes: primary.totalBytes,
+        downloadedBytes: primary.downloadedBytes,
+        progress: primary.progress,
+        speedBytesPerSec: primary.speedBytesPerSec,
+        status: primary.status,
+        isCompleted: primary.isCompleted,
+        linksCount: status.linkCount || 1
+      }
+    });
+  } else if (activeHudDownloadId !== null) {
+    // The active download just finished! Notify active tabs once so they can show completion
+    const justCompleted = completed.find((d) => d.id === activeHudDownloadId) || (completed.length > 0 ? completed[completed.length - 1] : null);
+    if (justCompleted) {
       await sendToActiveTabs({
         type: 'NETWICH_DOWNLOAD_PROGRESS',
         download: {
-          id: primary.id,
-          filename: primary.filename,
-          totalBytes: primary.totalBytes,
-          downloadedBytes: primary.downloadedBytes,
-          progress: primary.progress,
-          speedBytesPerSec: primary.speedBytesPerSec,
-          status: primary.status,
-          isCompleted: primary.isCompleted,
+          id: justCompleted.id,
+          filename: justCompleted.filename,
+          totalBytes: justCompleted.totalBytes,
+          downloadedBytes: justCompleted.totalBytes,
+          progress: 1.0,
+          speedBytesPerSec: 0,
+          status: 'completed',
+          isCompleted: true,
           linksCount: status.linkCount || 1
         }
       });
     }
+    // Finished: reset tracked download so old completed downloads are NEVER broadcast again
+    activeHudDownloadId = null;
   }
 
   // Adaptive polling: poll every 750ms while downloads are active for smooth native-like HUD updates
@@ -242,6 +263,9 @@ async function captureDownload(item: any): Promise<boolean> {
   await updateBadge(confirmed ? 'ok' : undefined);
 
   if (confirmed) {
+    const downloadId = (typeof handoff === 'object' && (handoff as any).id) || `dl-${Date.now()}`;
+    activeHudDownloadId = downloadId;
+
     showNotification(`start-${Date.now()}`, {
       title: 'Accelerating with Netwich',
       message: `${rawFilename || 'File'} · Multi-connection download started`,
@@ -252,7 +276,7 @@ async function captureDownload(item: any): Promise<boolean> {
     await sendToActiveTabs({
       type: 'NETWICH_SHOW_DOWNLOAD',
       download: {
-        id: (typeof handoff === 'object' && handoff.id) || 'new',
+        id: downloadId,
         filename: rawFilename || 'Download',
         totalBytes: item.totalBytes || 0,
         downloadedBytes: 0,
@@ -301,6 +325,9 @@ async function handleContextMenuClick(info: any, tab: any) {
     const confirmed = await confirmDownloadHandoff(handoff);
     await updateBadge(confirmed ? 'ok' : undefined);
     if (confirmed) {
+      const downloadId = (typeof handoff === 'object' && (handoff as any).id) || `dl-${Date.now()}`;
+      activeHudDownloadId = downloadId;
+
       showNotification(`start-${Date.now()}`, {
         title: 'Accelerating with Netwich',
         message: 'Link added to Netwich download engine',
@@ -309,7 +336,7 @@ async function handleContextMenuClick(info: any, tab: any) {
       await sendToActiveTabs({
         type: 'NETWICH_SHOW_DOWNLOAD',
         download: {
-          id: (typeof handoff === 'object' && (handoff as any).id) || 'new',
+          id: downloadId,
           filename: url.split('/').pop()?.split('?')[0] || 'Download',
           totalBytes: 0,
           downloadedBytes: 0,

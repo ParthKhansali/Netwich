@@ -143,6 +143,7 @@
   var openedAt = /* @__PURE__ */ new Map();
   var notifiedCompletedIds = /* @__PURE__ */ new Set();
   var hasInitializedDownloads = false;
+  var activeHudDownloadId = null;
   var ICON = { 16: "icons/icon-16.png", 32: "icons/icon-32.png" };
   var ICON_OFF = { 16: "icons/icon-off-16.png", 32: "icons/icon-off-32.png" };
   function formatBytes(bytes) {
@@ -229,24 +230,42 @@
         });
       }
     }
-    if (downloads.length > 0) {
-      const primary = active[0] || (completed.length > 0 ? completed[completed.length - 1] : null);
-      if (primary) {
+    if (active.length > 0) {
+      const primary = active[0];
+      activeHudDownloadId = primary.id;
+      await sendToActiveTabs({
+        type: "NETWICH_DOWNLOAD_PROGRESS",
+        download: {
+          id: primary.id,
+          filename: primary.filename,
+          totalBytes: primary.totalBytes,
+          downloadedBytes: primary.downloadedBytes,
+          progress: primary.progress,
+          speedBytesPerSec: primary.speedBytesPerSec,
+          status: primary.status,
+          isCompleted: primary.isCompleted,
+          linksCount: status.linkCount || 1
+        }
+      });
+    } else if (activeHudDownloadId !== null) {
+      const justCompleted = completed.find((d) => d.id === activeHudDownloadId) || (completed.length > 0 ? completed[completed.length - 1] : null);
+      if (justCompleted) {
         await sendToActiveTabs({
           type: "NETWICH_DOWNLOAD_PROGRESS",
           download: {
-            id: primary.id,
-            filename: primary.filename,
-            totalBytes: primary.totalBytes,
-            downloadedBytes: primary.downloadedBytes,
-            progress: primary.progress,
-            speedBytesPerSec: primary.speedBytesPerSec,
-            status: primary.status,
-            isCompleted: primary.isCompleted,
+            id: justCompleted.id,
+            filename: justCompleted.filename,
+            totalBytes: justCompleted.totalBytes,
+            downloadedBytes: justCompleted.totalBytes,
+            progress: 1,
+            speedBytesPerSec: 0,
+            status: "completed",
+            isCompleted: true,
             linksCount: status.linkCount || 1
           }
         });
       }
+      activeHudDownloadId = null;
     }
     if (active.length > 0) {
       setTimeout(checkDownloadsProgress, 750);
@@ -343,6 +362,8 @@ ${c.name}`, {
     await closeEmptyTab([item.url, item.finalUrl]);
     await updateBadge(confirmed ? "ok" : void 0);
     if (confirmed) {
+      const downloadId = typeof handoff === "object" && handoff.id || `dl-${Date.now()}`;
+      activeHudDownloadId = downloadId;
       showNotification(`start-${Date.now()}`, {
         title: "Accelerating with Netwich",
         message: `${rawFilename || "File"} \xB7 Multi-connection download started`,
@@ -351,7 +372,7 @@ ${c.name}`, {
       await sendToActiveTabs({
         type: "NETWICH_SHOW_DOWNLOAD",
         download: {
-          id: typeof handoff === "object" && handoff.id || "new",
+          id: downloadId,
           filename: rawFilename || "Download",
           totalBytes: item.totalBytes || 0,
           downloadedBytes: 0,
@@ -396,6 +417,8 @@ ${c.name}`, {
       const confirmed = await confirmDownloadHandoff(handoff);
       await updateBadge(confirmed ? "ok" : void 0);
       if (confirmed) {
+        const downloadId = typeof handoff === "object" && handoff.id || `dl-${Date.now()}`;
+        activeHudDownloadId = downloadId;
         showNotification(`start-${Date.now()}`, {
           title: "Accelerating with Netwich",
           message: "Link added to Netwich download engine",
@@ -404,7 +427,7 @@ ${c.name}`, {
         await sendToActiveTabs({
           type: "NETWICH_SHOW_DOWNLOAD",
           download: {
-            id: typeof handoff === "object" && handoff.id || "new",
+            id: downloadId,
             filename: url.split("/").pop()?.split("?")[0] || "Download",
             totalBytes: 0,
             downloadedBytes: 0,

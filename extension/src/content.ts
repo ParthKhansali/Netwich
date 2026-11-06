@@ -388,6 +388,11 @@ interface HUDDownload {
     const closeBtn = shadowRoot.getElementById('close-btn');
     closeBtn?.addEventListener('click', () => {
       isDismissed = true;
+      if (currentDownload?.id) {
+        try {
+          sessionStorage.setItem('netwich_dismissed_' + currentDownload.id, '1');
+        } catch {}
+      }
       hideHUD();
     });
 
@@ -425,9 +430,24 @@ interface HUDDownload {
     }
   }
 
-  function showHUD(download: HUDDownload) {
+  function showHUD(download: HUDDownload, forceShow: boolean = false) {
     if (isDismissed && lastDownloadId === download.id) {
       return;
+    }
+
+    try {
+      if (sessionStorage.getItem('netwich_dismissed_' + download.id) === '1') {
+        return;
+      }
+    } catch {}
+
+    // Only allow popping up for the first time if forceShow is true (from NETWICH_SHOW_DOWNLOAD)
+    if (!forceShow) {
+      if (!shadowRoot) return;
+      const card = shadowRoot.getElementById('card');
+      const miniPill = shadowRoot.getElementById('mini-pill');
+      const isVisible = card?.classList.contains('visible') || miniPill?.classList.contains('visible');
+      if (!isVisible) return;
     }
 
     if (lastDownloadId !== download.id) {
@@ -497,6 +517,12 @@ interface HUDDownload {
 
       // Auto dismiss 4 seconds after completion
       autoDismissTimer = setTimeout(() => {
+        isDismissed = true;
+        if (currentDownload?.id) {
+          try {
+            sessionStorage.setItem('netwich_dismissed_' + currentDownload.id, '1');
+          } catch {}
+        }
         hideHUD();
       }, 4000);
     } else if (download.status === 'failed') {
@@ -559,9 +585,14 @@ interface HUDDownload {
 
   // Listen for messages from background.js
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (message.type === 'NETWICH_SHOW_DOWNLOAD' || message.type === 'NETWICH_DOWNLOAD_PROGRESS') {
+    if (message.type === 'NETWICH_SHOW_DOWNLOAD') {
       if (message.download) {
-        showHUD(message.download);
+        showHUD(message.download, true); // Forced popup when download begins
+        sendResponse({ success: true });
+      }
+    } else if (message.type === 'NETWICH_DOWNLOAD_PROGRESS') {
+      if (message.download) {
+        showHUD(message.download, false); // Only updates existing visible HUD
         sendResponse({ success: true });
       }
     } else if (message.type === 'NETWICH_HIDE_DOWNLOAD') {

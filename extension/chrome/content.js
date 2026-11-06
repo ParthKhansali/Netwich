@@ -364,6 +364,12 @@
       const closeBtn = shadowRoot.getElementById("close-btn");
       closeBtn?.addEventListener("click", () => {
         isDismissed = true;
+        if (currentDownload?.id) {
+          try {
+            sessionStorage.setItem("netwich_dismissed_" + currentDownload.id, "1");
+          } catch {
+          }
+        }
         hideHUD();
       });
       const minimizeBtn = shadowRoot.getElementById("minimize-btn");
@@ -394,9 +400,22 @@
         miniPill?.classList.remove("visible");
       }
     }
-    function showHUD(download) {
+    function showHUD(download, forceShow = false) {
       if (isDismissed && lastDownloadId === download.id) {
         return;
+      }
+      try {
+        if (sessionStorage.getItem("netwich_dismissed_" + download.id) === "1") {
+          return;
+        }
+      } catch {
+      }
+      if (!forceShow) {
+        if (!shadowRoot) return;
+        const card2 = shadowRoot.getElementById("card");
+        const miniPill = shadowRoot.getElementById("mini-pill");
+        const isVisible = card2?.classList.contains("visible") || miniPill?.classList.contains("visible");
+        if (!isVisible) return;
       }
       if (lastDownloadId !== download.id) {
         isDismissed = false;
@@ -453,6 +472,13 @@
         }
         if (percentEl) percentEl.textContent = "100%";
         autoDismissTimer = setTimeout(() => {
+          isDismissed = true;
+          if (currentDownload?.id) {
+            try {
+              sessionStorage.setItem("netwich_dismissed_" + currentDownload.id, "1");
+            } catch {
+            }
+          }
           hideHUD();
         }, 4e3);
       } else if (download.status === "failed") {
@@ -508,9 +534,14 @@
       miniPill?.classList.remove("visible");
     }
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-      if (message.type === "NETWICH_SHOW_DOWNLOAD" || message.type === "NETWICH_DOWNLOAD_PROGRESS") {
+      if (message.type === "NETWICH_SHOW_DOWNLOAD") {
         if (message.download) {
-          showHUD(message.download);
+          showHUD(message.download, true);
+          sendResponse({ success: true });
+        }
+      } else if (message.type === "NETWICH_DOWNLOAD_PROGRESS") {
+        if (message.download) {
+          showHUD(message.download, false);
           sendResponse({ success: true });
         }
       } else if (message.type === "NETWICH_HIDE_DOWNLOAD") {

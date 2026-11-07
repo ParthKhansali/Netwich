@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 480" width="100%" height="auto" style="background: #0B0F19; border-radius: 14px;">
+<defs>
+  <style>
+  /* <![CDATA[ */
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=JetBrains+Mono:wght@500;700&family=Inter:wght@500;600;700&display=swap');
+    .title { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 700; fill: #F0F6FC; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; fill: #94A3B8; }
+    .hand { font-family: 'Caveat', cursive, sans-serif; font-size: 20px; font-weight: 700; }
+    .hand-sm { font-family: 'Caveat', cursive, sans-serif; font-size: 16px; font-weight: 600; }
+  /* ]]> */
+  </style>
+  <pattern id="download-grid" width="28" height="28" patternUnits="userSpaceOnUse">
+    <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#1E293B" stroke-width="0.7" opacity="0.65" />
+  </pattern>
+</defs>
+<rect width="980" height="480" rx="14" fill="#0B0F19" />
+<rect width="980" height="480" rx="14" fill="url(#download-grid)" opacity="0.85" />
+<rect x="14" y="14" width="952" height="452" rx="10" fill="none" />
+  <path d="M 23.7,13.2 Q 490.0,15.5 956.9,14.0 M 23.8,15.0 Q 490.0,15.0 958.4,14.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 965.2,24.0 Q 968.6,240.0 966.0,456.4 M 966.1,25.0 Q 965.4,240.0 966.0,457.9" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 955.9,466.6 Q 490.0,467.0 25.4,466.0 M 955.3,465.3 Q 490.0,464.8 25.8,466.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 13.4,454.7 Q 13.8,240.0 14.0,22.1 M 14.8,454.7 Q 16.2,240.0 14.0,22.1" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 14,24 Q 14,14 24,14 M 956,14 Q 966,14 966,24 M 966,456 Q 966,466 956,466 M 24,466 Q 14,466 14,456" fill="none" stroke="#334155" stroke-width="1.1199999999999999" stroke-linecap="round" opacity="0.85" />
+<text x="44" y="52" class="title" font-size="20">MULTI-LINK CHUNKED DOWNLOAD ACCELERATION</text>
+<text x="44" y="74" class="hand" fill="#34D399" font-size="18">How Netwich cuts download durations in half with parallel byte-range streams</text>
+<rect x="44" y="96" width="892" height="135" rx="10" fill="rgba(30, 41, 59, 0.3)" />
+  <path d="M 55.2,94.9 Q 490.0,94.7 924.8,96.0 M 54.8,95.2 Q 490.0,93.9 925.0,96.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 936.4,105.1 Q 933.3,163.5 936.0,220.4 M 937.4,105.3 Q 937.2,163.5 936.0,222.9" fill="none" stroke="#475569" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 925.1,230.7 Q 490.0,231.8 55.7,231.0 M 925.6,230.0 Q 490.0,230.9 53.4,231.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 43.6,222.3 Q 44.3,163.5 44.0,106.4 M 45.3,222.3 Q 44.5,163.5 44.0,107.9" fill="none" stroke="#475569" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 44,106 Q 44,96 54,96 M 926,96 Q 936,96 936,106 M 936,221 Q 936,231 926,231 M 54,231 Q 44,231 44,221" fill="none" stroke="#475569" stroke-width="1.2800000000000002" stroke-linecap="round" opacity="0.85" />
+<text x="64" y="126" class="title" font-size="16" fill="#CBD5E1">Standard Single-Connection Download (Slow)</text>
+<text x="64" y="148" class="mono" font-size="12">1x Wi-Fi Adapter (en0) @ 45 Mbps • 1 Sequential Stream • 2.4 GB Archive</text>
+<rect x="64" y="162" width="630" height="36" rx="6" fill="rgba(59, 130, 246, 0.15)" />
+  <path d="M 68.9,163.2 Q 379.0,161.4 690.4,162.0 M 70.5,163.3 Q 379.0,160.1 689.9,162.0" fill="none" stroke="#3B82F6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 695.2,167.0 Q 695.1,180.0 694.0,192.9 M 693.0,166.8 Q 695.8,180.0 694.0,192.5" fill="none" stroke="#3B82F6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 688.4,197.9 Q 379.0,200.7 70.4,198.0 M 686.9,198.2 Q 379.0,197.4 71.9,198.0" fill="none" stroke="#3B82F6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 62.8,192.4 Q 62.1,180.0 64.0,169.9 M 62.6,191.1 Q 66.6,180.0 64.0,167.8" fill="none" stroke="#3B82F6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 64,168 Q 64,162 70,162 M 688,162 Q 694,162 694,168 M 694,192 Q 694,198 688,198 M 70,198 Q 64,198 64,192" fill="none" stroke="#3B82F6" stroke-width="1.2800000000000002" stroke-linecap="round" opacity="0.85" />
+<rect x="64" y="162" width="210" height="36" rx="6" fill="rgba(59, 130, 246, 0.45)" />
+  <path d="M 69.2,161.9 Q 169.0,163.0 269.6,162.0 M 70.7,162.0 Q 169.0,159.4 268.4,162.0" fill="none" stroke="#60A5FA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 274.5,167.9 Q 272.4,180.0 274.0,191.1 M 273.9,168.3 Q 273.4,180.0 274.0,190.3" fill="none" stroke="#60A5FA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 266.7,197.8 Q 169.0,199.5 69.5,198.0 M 268.0,199.0 Q 169.0,195.5 69.1,198.0" fill="none" stroke="#60A5FA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 63.7,193.0 Q 65.1,180.0 64.0,167.7 M 63.6,191.0 Q 64.4,180.0 64.0,167.8" fill="none" stroke="#60A5FA" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 64,168 Q 64,162 70,162 M 268,162 Q 274,162 274,168 M 274,192 Q 274,198 268,198 M 70,198 Q 64,198 64,192" fill="none" stroke="#60A5FA" stroke-width="1.2800000000000002" stroke-linecap="round" opacity="0.85" />
+<text x="160" y="185" class="mono" font-size="12" fill="#FFFFFF">34% (Single Stream)</text>
+<text x="720" y="186" class="hand" font-size="22" fill="#F87171">⏳ Takes 11m 40s</text>
+<rect x="44" y="245" width="892" height="195" rx="10" fill="rgba(16, 185, 129, 0.08)" />
+  <path d="M 54.1,245.8 Q 490.0,243.3 926.7,245.0 M 54.2,244.3 Q 490.0,244.7 925.7,245.0" fill="none" stroke="#10B981" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 935.4,255.0 Q 933.4,342.5 936.0,430.9 M 936.6,256.1 Q 934.1,342.5 936.0,432.3" fill="none" stroke="#10B981" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 925.8,439.9 Q 490.0,438.3 54.3,440.0 M 926.1,440.8 Q 490.0,442.5 53.3,440.0" fill="none" stroke="#10B981" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 44.7,430.2 Q 43.1,342.5 44.0,252.6 M 44.5,430.4 Q 42.5,342.5 44.0,252.8" fill="none" stroke="#10B981" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 44,255 Q 44,245 54,245 M 926,245 Q 936,245 936,255 M 936,430 Q 936,440 926,440 M 54,440 Q 44,440 44,430" fill="none" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" opacity="0.85" />
+<text x="64" y="275" class="title" font-size="16" fill="#6EE7B7">With Netwich: 4 Ranged Chunks Split Across 2 Adapters</text>
+<text x="64" y="297" class="mono" font-size="12">Wi-Fi (en0) @ 45 Mbps + USB Phone 5G (en5) @ 85 Mbps = 130 Mbps Combined!</text>
+<rect x="64" y="315" width="142" height="44" rx="6" fill="rgba(59, 130, 246, 0.35)" />
+  <path d="M 69.1,316.2 Q 135.0,313.3 198.9,315.0 M 70.5,315.9 Q 135.0,314.7 201.2,315.0" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 207.3,320.0 Q 207.2,337.0 206.0,351.9 M 204.7,320.4 Q 203.2,337.0 206.0,352.8" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 199.0,357.8 Q 135.0,357.5 70.2,359.0 M 199.6,359.5 Q 135.0,361.5 69.4,359.0" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 64.1,352.5 Q 61.9,337.0 64.0,321.7 M 64.7,353.5 Q 65.1,337.0 64.0,321.8" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 64,321 Q 64,315 70,315 M 200,315 Q 206,315 206,321 M 206,353 Q 206,359 200,359 M 70,359 Q 64,359 64,353" fill="none" stroke="#3B82F6" stroke-width="1.2000000000000002" stroke-linecap="round" opacity="0.85" />
+<text x="76" y="335" class="mono" font-size="11" fill="#FFFFFF">Chunk 1: 0-600M</text>
+<text x="76" y="351" class="hand-sm" fill="#93C5FD">via Wi-Fi (en0)</text>
+<rect x="222" y="315" width="142" height="44" rx="6" fill="rgba(16, 185, 129, 0.35)" />
+  <path d="M 227.6,316.2 Q 293.0,314.5 359.2,315.0 M 229.0,315.4 Q 293.0,316.4 357.3,315.0" fill="none" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 365.2,321.1 Q 362.0,337.0 364.0,354.2 M 365.2,321.1 Q 364.9,337.0 364.0,354.3" fill="none" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 357.5,358.2 Q 293.0,357.8 227.3,359.0 M 357.9,359.8 Q 293.0,358.3 229.2,359.0" fill="none" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 223.3,353.3 Q 221.3,337.0 222.0,321.1 M 222.7,352.6 Q 222.2,337.0 222.0,322.1" fill="none" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 222,321 Q 222,315 228,315 M 358,315 Q 364,315 364,321 M 364,353 Q 364,359 358,359 M 228,359 Q 222,359 222,353" fill="none" stroke="#10B981" stroke-width="1.2000000000000002" stroke-linecap="round" opacity="0.85" />
+<text x="234" y="335" class="mono" font-size="11" fill="#FFFFFF">Chunk 2: 600M-1.2G</text>
+<text x="234" y="351" class="hand-sm" fill="#6EE7B7">via Phone 5G (en5)</text>
+<rect x="380" y="315" width="142" height="44" rx="6" fill="rgba(59, 130, 246, 0.35)" />
+  <path d="M 386.9,314.2 Q 451.0,316.2 518.3,315.0 M 385.1,313.7 Q 451.0,317.4 517.0,315.0" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 522.0,319.6 Q 523.4,337.0 522.0,353.6 M 522.9,321.0 Q 519.5,337.0 522.0,351.3" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 516.5,358.7 Q 451.0,357.3 384.4,359.0 M 515.3,357.7 Q 451.0,358.9 387.1,359.0" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 380.6,351.8 Q 379.2,337.0 380.0,318.9 M 380.1,353.0 Q 379.1,337.0 380.0,321.0" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 380,321 Q 380,315 386,315 M 516,315 Q 522,315 522,321 M 522,353 Q 522,359 516,359 M 386,359 Q 380,359 380,353" fill="none" stroke="#3B82F6" stroke-width="1.2000000000000002" stroke-linecap="round" opacity="0.85" />
+<text x="392" y="335" class="mono" font-size="11" fill="#FFFFFF">Chunk 3: 1.2G-1.8G</text>
+<text x="392" y="351" class="hand-sm" fill="#93C5FD">via Wi-Fi (en0)</text>
+<rect x="538" y="315" width="142" height="44" rx="6" fill="rgba(16, 185, 129, 0.35)" />
+  <path d="M 544.4,315.4 Q 609.0,316.9 672.9,315.0 M 542.9,315.3 Q 609.0,312.3 672.7,315.0" fill="none" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 680.9,321.1 Q 678.0,337.0 680.0,355.0 M 679.4,321.0 Q 679.3,337.0 680.0,354.0" fill="none" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 673.6,360.3 Q 609.0,361.0 544.5,359.0 M 672.8,357.8 Q 609.0,360.6 543.8,359.0" fill="none" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 538.1,354.4 Q 538.1,337.0 538.0,320.3 M 539.1,352.0 Q 537.9,337.0 538.0,320.2" fill="none" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 538,321 Q 538,315 544,315 M 674,315 Q 680,315 680,321 M 680,353 Q 680,359 674,359 M 544,359 Q 538,359 538,353" fill="none" stroke="#10B981" stroke-width="1.2000000000000002" stroke-linecap="round" opacity="0.85" />
+<text x="550" y="335" class="mono" font-size="11" fill="#FFFFFF">Chunk 4: 1.8G-2.4G</text>
+<text x="550" y="351" class="hand-sm" fill="#6EE7B7">via Phone 5G (en5)</text>
+<text x="720" y="342" class="hand" font-size="24" fill="#34D399">⚡ Takes 4m 05s</text>
+<text x="720" y="365" class="mono" font-size="12" fill="#FCD34D">(2.8x faster speedup)</text>
+<text x="64" y="415" class="hand" font-size="18" fill="#FCD34D">✓ Dynamic range chunking • Automatic reassembly • SHA-256 verification</text>
+</svg>

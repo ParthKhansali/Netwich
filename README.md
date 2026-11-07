@@ -14,7 +14,7 @@ Runs 100% locally on your Mac. No cloud relay, no subscriptions, no accounts, an
 ---
 
 <p align="center">
-  <img src="docs/screenshots/netwich-dashboard.jpg" alt="Netwich native macOS dashboard" width="100%">
+  <img src="docs/assets/netwich-banner.jpg" alt="Netwich Architectural Blueprint" width="100%">
 </p>
 
 <p align="center">
@@ -35,11 +35,23 @@ Netwich unlocks the full potential of your hardware:
 * **Instant Failover**: Continuously measures round-trip time and throughput with EWMA smoothing. If an interface drops or slows down, flows shift to surviving adapters without terminating active connections.
 * **Native Apple Silicon Architecture**: Lightweight SwiftUI interface compiled directly for Apple Silicon, running at under 0.4% idle CPU with zero background daemon overhead.
 
+<p align="center">
+  <img src="docs/screenshots/netwich-dashboard.jpg" alt="Netwich native macOS dashboard" width="100%">
+</p>
+
 ---
 
 ## How It Works
 
 Netwich sets up a local SOCKS5 proxy on `127.0.0.1:1080` and dynamically binds individual TCP sockets to specific physical interfaces using Apple's `IP_BOUND_IF` socket control:
+
+<p align="center">
+  <img src="docs/assets/netwich-architecture.svg" alt="Netwich Socket Binding Architecture" width="100%">
+</p>
+
+<details>
+<summary><b>View text architecture diagram</b></summary>
+<br/>
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -61,6 +73,32 @@ Netwich sets up a local SOCKS5 proxy on `127.0.0.1:1080` and dynamically binds i
                              ▼
                     Combined Internet
 ```
+
+</details>
+
+---
+
+## Multi-Stream Chunked Downloads
+
+Single-connection downloads are bound by the throughput limit of one network interface. When downloading files through Netwich, the internal download engine queries `Accept-Ranges` support and partitions files into concurrent byte-range streams distributed across all active links.
+
+<p align="center">
+  <img src="docs/assets/netwich-chunked-downloads.svg" alt="Multi-Link Chunked Downloads" width="100%">
+</p>
+
+Chunks download in parallel, stream straight to sparse allocations on disk, and verify file integrity before completing. If a remote host does not support ranged requests, Netwich seamlessly falls back to a single stream.
+
+---
+
+## Zero-Drop Resilient Failover
+
+Wireless connections fluctuate. If an interface experiences a sudden latency spike, packet loss, or hardware disconnection, Netwich reacts within 80ms to keep your connection alive:
+
+<p align="center">
+  <img src="docs/assets/netwich-failover.svg" alt="Zero-Drop Resilient Failover" width="100%">
+</p>
+
+Active streams migrate to surviving adapters without dropping your downloads or aborting active sessions. Once the degraded link recovers, health probes verify stability and traffic returns to balanced load distribution.
 
 ---
 

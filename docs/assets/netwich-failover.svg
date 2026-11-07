@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 460" width="100%" height="auto" style="background: #0B0F19; border-radius: 14px;">
+<defs>
+  <style>
+  /* <![CDATA[ */
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=JetBrains+Mono:wght@500;700&family=Inter:wght@500;600;700&display=swap');
+    .title { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 700; fill: #F0F6FC; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; fill: #94A3B8; }
+    .hand { font-family: 'Caveat', cursive, sans-serif; font-size: 20px; font-weight: 700; }
+    .hand-sm { font-family: 'Caveat', cursive, sans-serif; font-size: 16px; font-weight: 600; }
+    .badge { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+  /* ]]> */
+  </style>
+  <pattern id="failover-grid" width="28" height="28" patternUnits="userSpaceOnUse">
+    <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#1E293B" stroke-width="0.7" opacity="0.65" />
+  </pattern>
+</defs>
+<rect width="980" height="460" rx="14" fill="#0B0F19" />
+<rect width="980" height="460" rx="14" fill="url(#failover-grid)" opacity="0.85" />
+<rect x="14" y="14" width="952" height="432" rx="10" fill="none" />
+  <path d="M 23.1,15.4 Q 490.0,11.4 958.4,14.0 M 24.0,13.7 Q 490.0,16.5 955.2,14.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 966.9,23.3 Q 966.5,230.0 966.0,437.6 M 966.3,22.9 Q 965.8,230.0 966.0,437.1" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 957.2,446.9 Q 490.0,446.6 23.8,446.0 M 957.2,445.2 Q 490.0,445.0 24.7,446.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 14.2,436.8 Q 13.1,230.0 14.0,25.3 M 14.6,436.4 Q 15.1,230.0 14.0,22.3" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 14,24 Q 14,14 24,14 M 956,14 Q 966,14 966,24 M 966,436 Q 966,446 956,446 M 24,446 Q 14,446 14,436" fill="none" stroke="#334155" stroke-width="1.1199999999999999" stroke-linecap="round" opacity="0.85" />
+<text x="44" y="52" class="title" font-size="20">ZERO-DROP RESILIENT FAILOVER</text>
+<text x="44" y="74" class="hand" fill="#FBBF24" font-size="18">How Netwich keeps connections alive when an adapter flickers or unplugs</text>
+<rect x="44" y="105" width="260" height="240" rx="10" fill="rgba(30, 41, 59, 0.4)" />
+  <path d="M 55.4,105.7 Q 174.0,103.6 296.3,105.0 M 55.1,105.7 Q 174.0,107.8 296.0,105.0" fill="none" stroke="#3B82F6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 303.0,115.9 Q 302.3,225.0 304.0,336.1 M 305.1,115.0 Q 304.8,225.0 304.0,335.9" fill="none" stroke="#3B82F6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 295.1,346.0 Q 174.0,346.3 53.5,345.0 M 294.9,345.0 Q 174.0,342.2 51.9,345.0" fill="none" stroke="#3B82F6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 42.7,336.3 Q 42.2,225.0 44.0,112.8 M 43.1,335.6 Q 44.8,225.0 44.0,115.9" fill="none" stroke="#3B82F6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 44,115 Q 44,105 54,105 M 294,105 Q 304,105 304,115 M 304,335 Q 304,345 294,345 M 54,345 Q 44,345 44,335" fill="none" stroke="#3B82F6" stroke-width="1.4400000000000002" stroke-linecap="round" opacity="0.85" />
+<rect x="60" y="122" width="75" height="20" rx="5" fill="#1E3A8A" />
+<text x="68" y="136" class="badge" fill="#93C5FD">PHASE 1</text>
+<text x="60" y="165" class="title" font-size="16" fill="#F0F6FC">Dual Active Links</text>
+<text x="60" y="195" class="mono" font-size="12">• Wi-Fi (en0): OK (18ms)</text>
+<text x="60" y="218" class="mono" font-size="12">• Tether (en5): OK (24ms)</text>
+<text x="60" y="248" class="mono" font-size="12" fill="#34D399">Traffic balanced 50/50</text>
+<text x="60" y="274" class="mono" font-size="12">195 Mbps Combined Rate</text>
+<text x="60" y="315" class="hand" font-size="17" fill="#60A5FA">Both pipes healthy &amp; active</text>
+<path d="M 310.0,222.0 Q 332.0,216.0 354.0,222.0" fill="none" stroke="#F59E0B" stroke-width="2.4" stroke-linecap="round" />
+  <path d="M 341.2,224.0 L 354.0,222.0 L 343.9,213.8" fill="none" stroke="#F59E0B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="332.0" y="204.0" fill="#F59E0B" font-family="Caveat, cursive, sans-serif" font-size="17" font-weight="700" text-anchor="middle">Drop!</text>
+<rect x="360" y="105" width="260" height="240" rx="10" fill="rgba(239, 68, 68, 0.08)" />
+  <path d="M 368.9,104.0 Q 490.0,102.6 609.9,105.0 M 368.7,106.0 Q 490.0,103.6 610.9,105.0" fill="none" stroke="#EF4444" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 620.6,113.8 Q 619.3,225.0 620.0,334.2 M 621.0,115.5 Q 621.4,225.0 620.0,335.3" fill="none" stroke="#EF4444" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 609.0,344.1 Q 490.0,347.6 367.7,345.0 M 609.8,344.2 Q 490.0,344.6 371.7,345.0" fill="none" stroke="#EF4444" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 359.8,334.6 Q 359.7,225.0 360.0,115.4 M 359.8,335.1 Q 359.9,225.0 360.0,114.0" fill="none" stroke="#EF4444" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 360,115 Q 360,105 370,105 M 610,105 Q 620,105 620,115 M 620,335 Q 620,345 610,345 M 370,345 Q 360,345 360,335" fill="none" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round" opacity="0.85" />
+<rect x="376" y="122" width="75" height="20" rx="5" fill="#7F1D1D" />
+<text x="384" y="136" class="badge" fill="#FCA5A5">PHASE 2</text>
+<text x="376" y="165" class="title" font-size="16" fill="#FCA5A5">Wi-Fi Sudden Drop</text>
+<text x="376" y="195" class="mono" font-size="12" fill="#F87171">✕ Wi-Fi (en0): Disconnected</text>
+<text x="376" y="218" class="mono" font-size="12">• Tether (en5): Active</text>
+<text x="376" y="248" class="mono" font-size="12" fill="#FBBF24">EWMA trigger in 80ms</text>
+<text x="376" y="274" class="mono" font-size="12">Wi-Fi unweighted</text>
+<text x="376" y="315" class="hand" font-size="17" fill="#F87171">Zero socket reset thrown!</text>
+<path d="M 626.0,222.0 Q 648.0,228.0 670.0,222.0" fill="none" stroke="#10B981" stroke-width="2.4" stroke-linecap="round" />
+  <path d="M 659.9,230.2 L 670.0,222.0 L 657.2,220.0" fill="none" stroke="#10B981" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="648.0" y="216.0" fill="#10B981" font-family="Caveat, cursive, sans-serif" font-size="17" font-weight="700" text-anchor="middle">Shift</text>
+<rect x="676" y="105" width="260" height="240" rx="10" fill="rgba(16, 185, 129, 0.12)" />
+  <path d="M 684.8,104.9 Q 806.0,103.9 925.8,105.0 M 685.5,105.2 Q 806.0,105.0 924.7,105.0" fill="none" stroke="#10B981" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 935.3,115.9 Q 936.1,225.0 936.0,335.8 M 935.6,114.4 Q 938.0,225.0 936.0,337.1" fill="none" stroke="#10B981" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 926.5,346.2 Q 806.0,345.9 683.7,345.0 M 926.8,343.7 Q 806.0,342.3 685.9,345.0" fill="none" stroke="#10B981" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 675.5,335.5 Q 677.8,225.0 676.0,115.8 M 675.5,334.7 Q 676.0,225.0 676.0,114.5" fill="none" stroke="#10B981" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 676,115 Q 676,105 686,105 M 926,105 Q 936,105 936,115 M 936,335 Q 936,345 926,345 M 686,345 Q 676,345 676,335" fill="none" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" opacity="0.85" />
+<rect x="692" y="122" width="75" height="20" rx="5" fill="#065F46" />
+<text x="700" y="136" class="badge" fill="#6EE7B7">PHASE 3</text>
+<text x="692" y="165" class="title" font-size="16" fill="#6EE7B7">Seamless Fallback</text>
+<text x="692" y="195" class="mono" font-size="12">• Tether (en5): 100% Load</text>
+<text x="692" y="218" class="mono" font-size="12" fill="#6EE7B7">✓ All streams preserved</text>
+<text x="692" y="248" class="mono" font-size="12">Downloads never reset</text>
+<text x="692" y="274" class="mono" font-size="12">Auto-resumes on return</text>
+<text x="692" y="315" class="hand" font-size="17" fill="#34D399">Uninterrupted browsing &amp; calls</text>
+<rect x="44" y="370" width="892" height="58" rx="10" fill="rgba(15, 23, 42, 0.65)" />
+  <path d="M 52.7,370.4 Q 490.0,372.4 924.1,370.0 M 53.4,368.7 Q 490.0,367.7 925.2,370.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 937.0,378.7 Q 936.6,399.0 936.0,420.4 M 937.0,379.1 Q 933.3,399.0 936.0,420.1" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 926.7,428.6 Q 490.0,429.0 55.3,428.0 M 926.6,428.6 Q 490.0,429.3 51.7,428.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 44.1,418.8 Q 43.6,399.0 44.0,378.1 M 42.7,417.3 Q 46.3,399.0 44.0,381.7" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 44,380 Q 44,370 54,370 M 926,370 Q 936,370 936,380 M 936,418 Q 936,428 926,428 M 54,428 Q 44,428 44,418" fill="none" stroke="#334155" stroke-width="1.1199999999999999" stroke-linecap="round" opacity="0.85" />
+<text x="64" y="405" class="hand" font-size="18" fill="#FCD34D">Unlike traditional networking, your active transfers do not abort when one link drops.</text>
+</svg>

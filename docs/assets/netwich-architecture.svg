@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 530" width="100%" height="auto" style="background: #0B0F19; border-radius: 14px;">
+<defs>
+  <style>
+  /* <![CDATA[ */
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=JetBrains+Mono:wght@500;700&family=Inter:wght@500;600;700&display=swap');
+    .title { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 700; fill: #F0F6FC; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; fill: #94A3B8; }
+    .hand { font-family: 'Caveat', cursive, sans-serif; font-size: 20px; font-weight: 700; }
+    .hand-sm { font-family: 'Caveat', cursive, sans-serif; font-size: 16px; font-weight: 600; }
+    .badge { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+  /* ]]> */
+  </style>
+  <pattern id="blueprint-grid" width="28" height="28" patternUnits="userSpaceOnUse">
+    <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#1E293B" stroke-width="0.7" opacity="0.65" />
+  </pattern>
+</defs>
+<rect width="980" height="530" rx="14" fill="#0B0F19" />
+<rect width="980" height="530" rx="14" fill="url(#blueprint-grid)" opacity="0.85" />
+<rect x="14" y="14" width="952" height="502" rx="10" fill="none" />
+  <path d="M 25.3,15.2 Q 490.0,14.5 954.9,14.0 M 23.2,13.2 Q 490.0,13.8 957.0,14.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 965.2,25.3 Q 967.2,265.0 966.0,507.1 M 964.8,24.8 Q 968.4,265.0 966.0,504.9" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 955.5,516.4 Q 490.0,516.7 23.9,516.0 M 955.8,515.5 Q 490.0,516.5 25.1,516.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 14.5,506.5 Q 11.8,265.0 14.0,22.3 M 13.7,505.8 Q 16.1,265.0 14.0,24.2" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 14,24 Q 14,14 24,14 M 956,14 Q 966,14 966,24 M 966,506 Q 966,516 956,516 M 24,516 Q 14,516 14,506" fill="none" stroke="#334155" stroke-width="1.1199999999999999" stroke-linecap="round" opacity="0.85" />
+<text x="44" y="52" class="title" font-size="20">NETWICH SOCKET BINDING ARCHITECTURE</text>
+<text x="44" y="74" class="hand" fill="#60A5FA" font-size="18">How local apps stack multiple physical links simultaneously</text>
+<rect x="44" y="105" width="215" height="165" rx="10" fill="rgba(30, 41, 59, 0.45)" />
+  <path d="M 52.6,104.9 Q 151.5,104.5 250.0,105.0 M 52.7,105.6 Q 151.5,105.2 248.6,105.0" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 258.0,113.7 Q 261.7,187.5 259.0,260.5 M 258.0,115.5 Q 260.8,187.5 259.0,258.3" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 249.4,269.9 Q 151.5,268.7 54.4,270.0 M 248.5,271.0 Q 151.5,270.0 52.1,270.0" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 42.6,258.8 Q 45.1,187.5 44.0,113.9 M 45.2,261.1 Q 41.4,187.5 44.0,115.4" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 44,115 Q 44,105 54,105 M 249,105 Q 259,105 259,115 M 259,260 Q 259,270 249,270 M 54,270 Q 44,270 44,260" fill="none" stroke="#94A3B8" stroke-width="1.4400000000000002" stroke-linecap="round" opacity="0.85" />
+<text x="64" y="136" class="title" font-size="16">Your Applications</text>
+<text x="64" y="162" class="mono">• Safari &amp; Chrome</text>
+<text x="64" y="185" class="mono">• curl, git, package CLI</text>
+<text x="64" y="208" class="mono">• Netwich Downloader</text>
+<text x="64" y="244" class="hand-sm" fill="#94A3B8">Seamless system proxy</text>
+<path d="M 260.0,187.0 Q 302.5,184.0 345.0,187.0" fill="none" stroke="#F0F6FC" stroke-width="2.4" stroke-linecap="round" />
+  <path d="M 332.8,191.5 L 345.0,187.0 L 333.5,180.9" fill="none" stroke="#F0F6FC" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="302.5" y="171.0" fill="#F0F6FC" font-family="Caveat, cursive, sans-serif" font-size="17" font-weight="700" text-anchor="middle">SOCKS5 :1080</text>
+<rect x="350" y="95" width="265" height="255" rx="10" fill="rgba(15, 23, 42, 0.85)" />
+  <path d="M 360.6,95.8 Q 482.5,96.9 603.5,95.0 M 359.0,94.1 Q 482.5,96.7 606.6,95.0" fill="none" stroke="#60A5FA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 616.1,104.9 Q 613.4,222.5 615.0,341.3 M 616.3,106.1 Q 612.8,222.5 615.0,338.6" fill="none" stroke="#60A5FA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 605.1,350.5 Q 482.5,350.9 361.7,350.0 M 604.4,350.9 Q 482.5,350.8 361.7,350.0" fill="none" stroke="#60A5FA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 349.3,339.2 Q 347.7,222.5 350.0,102.8 M 351.1,339.5 Q 347.8,222.5 350.0,102.6" fill="none" stroke="#60A5FA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 350,105 Q 350,95 360,95 M 605,95 Q 615,95 615,105 M 615,340 Q 615,350 605,350 M 360,350 Q 350,350 350,340" fill="none" stroke="#60A5FA" stroke-width="1.7600000000000002" stroke-linecap="round" opacity="0.85" />
+<rect x="368" y="112" width="115" height="22" rx="6" fill="#1E3A8A" />
+<text x="376" y="127" class="badge" fill="#93C5FD">NETWICH CORE</text>
+<text x="368" y="160" class="title" font-size="17" fill="#F0F6FC">Dynamic Flow Engine</text>
+<rect x="368" y="175" width="228" height="42" rx="6" fill="rgba(59, 130, 246, 0.12)" />
+  <path d="M 375.1,173.6 Q 482.0,172.7 590.9,175.0 M 373.9,175.2 Q 482.0,175.7 591.9,175.0" fill="none" stroke="#3B82F6" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 595.4,181.4 Q 594.3,196.0 596.0,210.1 M 595.5,182.2 Q 595.7,196.0 596.0,211.4" fill="none" stroke="#3B82F6" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 591.1,216.7 Q 482.0,218.2 372.9,217.0 M 588.8,216.0 Q 482.0,219.5 375.0,217.0" fill="none" stroke="#3B82F6" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 367.6,210.9 Q 365.9,196.0 368.0,181.5 M 368.5,210.6 Q 368.9,196.0 368.0,180.0" fill="none" stroke="#3B82F6" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 368,181 Q 368,175 374,175 M 590,175 Q 596,175 596,181 M 596,211 Q 596,217 590,217 M 374,217 Q 368,217 368,211" fill="none" stroke="#3B82F6" stroke-width="0.96" stroke-linecap="round" opacity="0.85" />
+<text x="380" y="201" class="mono" fill="#E2E8F0" font-size="12">Weighted Least-Conns</text>
+<rect x="368" y="226" width="228" height="42" rx="6" fill="rgba(16, 185, 129, 0.12)" />
+  <path d="M 373.0,226.1 Q 482.0,226.9 590.5,226.0 M 374.7,225.3 Q 482.0,225.0 591.0,226.0" fill="none" stroke="#10B981" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 595.4,230.7 Q 596.4,247.0 596.0,262.0 M 596.7,231.8 Q 598.5,247.0 596.0,264.5" fill="none" stroke="#10B981" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 590.6,269.3 Q 482.0,267.1 374.8,268.0 M 591.4,269.2 Q 482.0,266.5 373.9,268.0" fill="none" stroke="#10B981" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 367.9,261.4 Q 365.5,247.0 368.0,232.1 M 368.7,263.0 Q 368.7,247.0 368.0,233.4" fill="none" stroke="#10B981" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 368,232 Q 368,226 374,226 M 590,226 Q 596,226 596,232 M 596,262 Q 596,268 590,268 M 374,268 Q 368,268 368,262" fill="none" stroke="#10B981" stroke-width="0.96" stroke-linecap="round" opacity="0.85" />
+<text x="380" y="252" class="mono" fill="#E2E8F0" font-size="12">EWMA Latency &amp; Probing</text>
+<rect x="368" y="277" width="228" height="42" rx="6" fill="rgba(168, 85, 247, 0.12)" />
+  <path d="M 373.3,277.4 Q 482.0,274.5 591.1,277.0 M 374.8,276.5 Q 482.0,278.1 592.4,277.0" fill="none" stroke="#A855F7" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 596.6,282.8 Q 594.7,298.0 596.0,311.7 M 595.2,283.8 Q 597.3,298.0 596.0,312.1" fill="none" stroke="#A855F7" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 589.1,318.0 Q 482.0,321.3 375.0,319.0 M 590.5,320.1 Q 482.0,317.7 373.4,319.0" fill="none" stroke="#A855F7" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 367.1,313.0 Q 367.7,298.0 368.0,284.8 M 368.0,312.2 Q 369.2,298.0 368.0,280.9" fill="none" stroke="#A855F7" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 368,283 Q 368,277 374,277 M 590,277 Q 596,277 596,283 M 596,313 Q 596,319 590,319 M 374,319 Q 368,319 368,313" fill="none" stroke="#A855F7" stroke-width="0.96" stroke-linecap="round" opacity="0.85" />
+<text x="380" y="303" class="mono" fill="#E2E8F0" font-size="12">Socket Bound: IP_BOUND_IF</text>
+<path d="M 615.0,155.0 Q 664.0,140.0 715.0,145.0" fill="none" stroke="#3B82F6" stroke-width="2.6" stroke-linecap="round" />
+  <path d="M 702.7,149.1 L 715.0,145.0 L 703.7,138.6" fill="none" stroke="#3B82F6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="664.0" y="130.0" fill="#3B82F6" font-family="Caveat, cursive, sans-serif" font-size="17" font-weight="700" text-anchor="middle">flow α</text>
+<path d="M 615.0,275.0 Q 664.0,290.0 715.0,285.0" fill="none" stroke="#10B981" stroke-width="2.6" stroke-linecap="round" />
+  <path d="M 703.7,291.4 L 715.0,285.0 L 702.7,280.9" fill="none" stroke="#10B981" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="664.0" y="310.0" fill="#10B981" font-family="Caveat, cursive, sans-serif" font-size="17" font-weight="700" text-anchor="middle">flow β</text>
+<rect x="720" y="100" width="215" height="95" rx="10" fill="rgba(30, 58, 138, 0.25)" />
+  <path d="M 729.5,101.2 Q 827.5,100.5 927.2,100.0 M 729.9,99.0 Q 827.5,102.3 925.6,100.0" fill="none" stroke="#3B82F6" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 935.3,110.6 Q 937.2,147.5 935.0,183.2 M 936.4,109.7 Q 932.2,147.5 935.0,185.7" fill="none" stroke="#3B82F6" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 924.4,195.1 Q 827.5,197.1 731.7,195.0 M 924.3,195.6 Q 827.5,192.3 730.7,195.0" fill="none" stroke="#3B82F6" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 719.0,186.0 Q 719.4,147.5 720.0,109.5 M 721.2,184.5 Q 722.3,147.5 720.0,108.6" fill="none" stroke="#3B82F6" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 720,110 Q 720,100 730,100 M 925,100 Q 935,100 935,110 M 935,185 Q 935,195 925,195 M 730,195 Q 720,195 720,185" fill="none" stroke="#3B82F6" stroke-width="1.6" stroke-linecap="round" opacity="0.85" />
+<text x="738" y="128" class="title" font-size="15" fill="#93C5FD">Wi-Fi (en0)</text>
+<text x="738" y="150" class="mono" font-size="12">Rate: 85 Mbps</text>
+<text x="738" y="170" class="mono" font-size="12">RTT: 18ms (Weight 1.0)</text>
+<rect x="720" y="240" width="215" height="95" rx="10" fill="rgba(6, 78, 59, 0.25)" />
+  <path d="M 731.1,239.9 Q 827.5,237.4 924.4,240.0 M 729.1,239.8 Q 827.5,238.3 923.7,240.0" fill="none" stroke="#10B981" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 935.7,250.7 Q 932.6,287.5 935.0,327.0 M 934.2,250.1 Q 936.7,287.5 935.0,326.5" fill="none" stroke="#10B981" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 924.0,335.3 Q 827.5,337.6 728.0,335.0 M 925.5,334.6 Q 827.5,334.1 729.1,335.0" fill="none" stroke="#10B981" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 720.3,326.3 Q 721.6,287.5 720.0,247.8 M 720.5,323.9 Q 722.0,287.5 720.0,251.8" fill="none" stroke="#10B981" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 720,250 Q 720,240 730,240 M 925,240 Q 935,240 935,250 M 935,325 Q 935,335 925,335 M 730,335 Q 720,335 720,325" fill="none" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" opacity="0.85" />
+<text x="738" y="268" class="title" font-size="15" fill="#6EE7B7">USB Tether (en5)</text>
+<text x="738" y="290" class="mono" font-size="12">Rate: 110 Mbps (5G)</text>
+<text x="738" y="310" class="mono" font-size="12">RTT: 22ms (Weight 1.3)</text>
+<path d="M 795.0,198.0 Q 795.0,291.5 795.0,385.0" fill="none" stroke="#60A5FA" stroke-width="2.0" stroke-linecap="round" />
+  <path d="M 789.7,373.1 L 795.0,385.0 L 800.3,373.1" fill="none" stroke="#60A5FA" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" />
+  
+<path d="M 875.0,338.0 Q 875.0,361.5 875.0,385.0" fill="none" stroke="#34D399" stroke-width="2.0" stroke-linecap="round" />
+  <path d="M 869.7,373.1 L 875.0,385.0 L 880.3,373.1" fill="none" stroke="#34D399" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" />
+  
+<rect x="245" y="390" width="690" height="95" rx="10" fill="rgba(245, 158, 11, 0.10)" />
+  <path d="M 256.0,388.7 Q 590.0,390.9 924.7,390.0 M 253.8,388.6 Q 590.0,392.5 923.2,390.0" fill="none" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 935.9,401.2 Q 937.1,437.5 935.0,477.4 M 935.8,400.6 Q 936.8,437.5 935.0,476.1" fill="none" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 925.6,485.5 Q 590.0,486.3 252.6,485.0 M 925.7,485.0 Q 590.0,486.2 255.2,485.0" fill="none" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 244.8,476.0 Q 244.9,437.5 245.0,397.9 M 245.6,473.6 Q 242.5,437.5 245.0,399.6" fill="none" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 245,400 Q 245,390 255,390 M 925,390 Q 935,390 935,400 M 935,475 Q 935,485 925,485 M 255,485 Q 245,485 245,475" fill="none" stroke="#F59E0B" stroke-width="1.7600000000000002" stroke-linecap="round" opacity="0.85" />
+<text x="268" y="422" class="title" font-size="17" fill="#FCD34D">Unified Combined Pipe = 195 Mbps Total Throughput</text>
+<text x="268" y="446" class="mono" font-size="12" fill="#E2E8F0">Zero packet loss • Sub-100ms failover • Safe local proxy recovery</text>
+<text x="268" y="470" class="hand" font-size="18" fill="#FBBF24">All flows combined automatically without remote multi-path proxies!</text>
+<rect x="44" y="390" width="185" height="95" rx="10" fill="rgba(15, 23, 42, 0.6)" />
+  <path d="M 54.4,390.3 Q 136.5,391.1 218.3,390.0 M 53.3,389.0 Q 136.5,388.0 221.2,390.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 227.9,400.7 Q 229.3,437.5 229.0,473.3 M 230.1,399.9 Q 231.3,437.5 229.0,475.4" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 218.1,483.8 Q 136.5,483.2 52.3,485.0 M 220.0,485.6 Q 136.5,483.4 52.1,485.0" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 44.7,475.7 Q 44.1,437.5 44.0,397.7 M 44.7,475.2 Q 46.3,437.5 44.0,401.8" fill="none" stroke="#334155" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  <path d="M 44,400 Q 44,390 54,390 M 219,390 Q 229,390 229,400 M 229,475 Q 229,485 219,485 M 54,485 Q 44,485 44,475" fill="none" stroke="#334155" stroke-width="1.1199999999999999" stroke-linecap="round" opacity="0.85" />
+<text x="60" y="420" class="hand" fill="#38BDF8">✓ 100% On-Mac</text>
+<text x="60" y="446" class="hand" fill="#38BDF8">✓ Zero Cloud Relay</text>
+<text x="60" y="472" class="hand" fill="#38BDF8">✓ No Root Daemons</text>
+</svg>

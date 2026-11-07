@@ -138,6 +138,9 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .openNewDownloadSheet)) { _ in
             showNewDownload = true
         }
+        .onReceive(NotificationCenter.default.publisher(for: .openSetupSheet)) { _ in
+            showSetup = true
+        }
         .onReceive(NotificationCenter.default.publisher(for: .selectTab)) { note in
             guard let raw = note.object as? String, let next = Tab(rawValue: raw) else { return }
             withAnimation(Motion.morph) { tab = next }

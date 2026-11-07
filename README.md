@@ -2,8 +2,8 @@
 
 **Stack your connections.**
 
-Netwich is a native macOS app that combines several internet links — home Wi-Fi and a phone
-tether, Ethernet and a hotspot — into one faster, failover-safe connection. It runs entirely
+Netwich is a native macOS app that combines several internet links (such as home Wi-Fi and a phone
+tether, or Ethernet and a hotspot) into one faster, failover-safe connection. It runs entirely
 on your Mac: no account, no relay, no VPN subscription, no privileged daemon.
 
 [![CI](https://github.com/ParthKhansali/Netwich/actions/workflows/ci.yml/badge.svg)](https://github.com/ParthKhansali/Netwich/actions/workflows/ci.yml)
@@ -79,8 +79,8 @@ actually matter and live detection of the new adapter.
 
 ### Permissions you can see
 
-Onboarding probes the real state of your machine — bundle location, quarantine flag, admin
-group, login item, bundled extension — and each row opens the matching System Settings pane.
+Onboarding probes the real state of your machine (bundle location, quarantine flag, admin
+group, login item, bundled extension), and each row opens the matching System Settings pane.
 Nothing is assumed, and nothing is requested that Netwich does not use.
 
 ![Onboarding](docs/screenshots/netwich-onboarding.jpg)
@@ -94,7 +94,7 @@ Nothing is assumed, and nothing is requested that Netwich does not use.
 | Administrator password (one system dialog) | Only when aggregation is turned **on** | `networksetup` is the supported way to point macOS's SOCKS proxy at Netwich and requires admin rights. All services change in one batch behind a single prompt. |
 | Downloads folder | When a download starts | Files are written where you chose. |
 | Login item | Optional, off by default | Start at login. Removable in System Settings → General → Login Items. |
-| Browser extension | When you install it | Talks only to `127.0.0.1:19288–19290`. |
+| Browser extension | When you install it | Talks only to `127.0.0.1:19288-19290`. |
 
 Netwich has no telemetry and contacts no service of its own. The only optional outbound
 request it makes is the speed test, and only when you press **Run test**.
@@ -104,10 +104,10 @@ request it makes is the speed test, and only when you press **Run test**.
 Browsers do not allow an app to sideload an extension, so this last step is manual by design.
 The app shows the right address for your browser and a **Reveal extension folder** button.
 
-**Chrome, Brave, Edge, Arc** — open `chrome://extensions` (`brave://extensions` in Brave),
+**Chrome, Brave, Edge, Arc**: open `chrome://extensions` (`brave://extensions` in Brave),
 enable **Developer mode**, click **Load unpacked**, choose the `chromium` folder.
 
-**Firefox** — open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on…**,
+**Firefox**: open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on...**,
 select `firefox/manifest.json`. Temporary add-ons are removed when Firefox quits; permanent
 installation requires signing at [addons.mozilla.org](https://addons.mozilla.org/developers/).
 
@@ -150,7 +150,7 @@ Measured on an Apple Silicon Mac with one window open and aggregation idle:
 
 | Metric | Before the pass | After |
 | --- | --- | --- |
-| Idle CPU (`top`, 10 s sample) | 0.7–0.8% | **0.3–0.4%** |
+| Idle CPU (`top`, 10 s sample) | 0.7-0.8% | **0.3-0.4%** |
 | Memory footprint | ~95 MB | ~95 MB |
 
 The wins came from a coalescing telemetry timer (tolerance + common run-loop mode), publishing
@@ -211,6 +211,6 @@ an offline build still works.
 
 ## Author
 
-Built by **Parth Khansali** — [@ParthKhansali](https://github.com/ParthKhansali).
+Built by **Parth Khansali** ([@ParthKhansali](https://github.com/ParthKhansali)).
 
 MIT licensed. See [LICENSE](LICENSE).

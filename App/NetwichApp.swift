@@ -101,6 +101,12 @@ struct NetwichApp: App {
             return
         }
 
+        // netwich://setup opens the onboarding/permissions setup sheet.
+        if url.host == "setup" {
+            NotificationCenter.default.post(name: .openSetupSheet, object: nil)
+            return
+        }
+
         if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
            let raw = components.queryItems?.first(where: { $0.name == "url" })?.value,
            let target = URL(string: raw),
@@ -119,5 +125,6 @@ struct NetwichApp: App {
 
 extension Notification.Name {
     static let openNewDownloadSheet = Notification.Name("dev.parth.netwich.openNewDownload")
+    static let openSetupSheet = Notification.Name("dev.parth.netwich.openSetup")
     static let selectTab = Notification.Name("dev.parth.netwich.selectTab")
 }

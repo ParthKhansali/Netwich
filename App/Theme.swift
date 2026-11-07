@@ -77,10 +77,11 @@ enum NetwichBrand {
         }
     }
 
-    /// Isolated brand mark (the crossing threads and bread rails without tile backdrop).
+    /// Isolated brand mark (the crossing threads and rails without tile backdrop).
     @ViewBuilder
-    static func mark(size: CGFloat) -> some View {
-        if let image = nsImage(named: "netwich-mark-512") {
+    static func mark(size: CGFloat, isDarkSurface: Bool = true) -> some View {
+        let name = isDarkSurface ? "netwich-mark-dark-512" : "netwich-mark-512"
+        if let image = nsImage(named: name) ?? nsImage(named: "netwich-mark-512") {
             Image(nsImage: image)
                 .resizable()
                 .aspectRatio(contentMode: .fit)

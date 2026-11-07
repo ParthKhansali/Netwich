@@ -534,15 +534,8 @@ struct OnboardingView: View {
         VStack(spacing: 14) {
             Spacer()
 
-            ZStack {
-                Circle()
-                    .fill(LinearGradient(colors: [Palette.accent.opacity(0.30), Palette.violet.opacity(0.18)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 84, height: 84)
-                Image(systemName: "square.stack.3d.up.fill")
-                    .font(.system(size: 34, weight: .semibold))
-                    .foregroundStyle(.white)
-            }
-            .shadow(color: Palette.accent.opacity(0.5), radius: 26, y: 8)
+            NetwichBrand.appIcon(size: 88)
+                .shadow(color: Palette.accent.opacity(0.4), radius: 24, y: 8)
 
             Text("Netwich")
                 .font(.system(size: 30, weight: .semibold, design: .rounded))
@@ -756,9 +749,7 @@ struct MenuBarView: View {
     var body: some View {
         VStack(spacing: 10) {
             HStack(spacing: 7) {
-                Image(systemName: "square.stack.3d.up.fill")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(Palette.accent)
+                NetwichBrand.mark(size: 14)
                 Text("Netwich")
                     .font(.system(size: 12, weight: .semibold))
                 Spacer()

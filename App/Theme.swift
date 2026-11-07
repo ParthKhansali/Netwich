@@ -36,6 +36,75 @@ enum Palette {
     }
 }
 
+// MARK: - Netwich Brand Assets
+
+enum NetwichBrand {
+    /// Loads a named image from Bundle.main or by name.
+    static func nsImage(named name: String, template: Bool = false) -> NSImage? {
+        if let image = NSImage(named: NSImage.Name(name)) {
+            image.isTemplate = template
+            return image
+        }
+        let bundle = Bundle.main
+        for ext in ["png", "svg", "tiff", "icns"] {
+            if let url = bundle.url(forResource: name, withExtension: ext),
+               let image = NSImage(contentsOf: url) {
+                image.isTemplate = template
+                return image
+            }
+        }
+        return nil
+    }
+
+    /// App icon (the midnight rounded square with the sandwich threads).
+    @ViewBuilder
+    static func appIcon(size: CGFloat) -> some View {
+        if let image = nsImage(named: "netwich-app-icon-1024") {
+            Image(nsImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: size, height: size)
+                .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+        } else {
+            ZStack {
+                RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+                    .fill(Palette.accent)
+                Image(systemName: "square.stack.3d.up.fill")
+                    .font(.system(size: size * 0.5, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+            .frame(width: size, height: size)
+        }
+    }
+
+    /// Isolated brand mark (the crossing threads and bread rails without tile backdrop).
+    @ViewBuilder
+    static func mark(size: CGFloat) -> some View {
+        if let image = nsImage(named: "netwich-mark-512") {
+            Image(nsImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: size, height: size)
+        } else {
+            Image(systemName: "point.3.filled.connected.trianglepath.dotted")
+                .font(.system(size: size * 0.8, weight: .bold))
+                .foregroundStyle(Palette.accent)
+                .frame(width: size, height: size)
+        }
+    }
+
+    /// Menu bar template icon.
+    @ViewBuilder
+    static func menuBarIcon(active: Bool) -> some View {
+        if let image = nsImage(named: "netwichTemplate", template: true) {
+            Image(nsImage: image)
+                .opacity(active ? 1.0 : 0.6)
+        } else {
+            Image(systemName: active ? "square.stack.3d.up.fill" : "square.stack.3d.up")
+        }
+    }
+}
+
 // MARK: - Motion
 
 /// Shared springs. One vocabulary everywhere beats ad-hoc durations.

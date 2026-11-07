@@ -70,7 +70,7 @@ struct NetwichApp: App {
             MenuBarView(state: state)
         } label: {
             HStack(spacing: 4) {
-                Image(systemName: state.isOn ? "square.stack.3d.up.fill" : "square.stack.3d.up")
+                NetwichBrand.menuBarIcon(active: state.isOn)
                 if state.isOn, state.currentDownloadSpeedBytesPerSec > 50_000 {
                     Text(ByteFormat.rate(state.currentDownloadSpeedBytesPerSec))
                         .font(.system(size: 10, weight: .medium, design: .monospaced))

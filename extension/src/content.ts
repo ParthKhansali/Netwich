@@ -337,6 +337,7 @@ interface HUDDownload {
         <div class="hud-card" id="card">
           <div class="hud-header">
             <div class="hud-brand">
+              <img src="${api.runtime.getURL('icons/icon-32.png')}" alt="Netwich" style="width: 15px; height: 15px; border-radius: 3px; object-fit: contain; vertical-align: middle;" />
               <div class="hud-dot" id="dot"></div>
               <span id="header-title">Netwich Download</span>
             </div>

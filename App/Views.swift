@@ -268,19 +268,8 @@ private struct Sidebar: View {
 
     private var brand: some View {
         HStack(spacing: 10) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(LinearGradient(
-                        colors: [Palette.accent.opacity(0.85), Palette.violet.opacity(0.65)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                    .frame(width: 30, height: 30)
-                    .shadow(color: Palette.accent.opacity(0.5), radius: 10, y: 3)
-                Image(systemName: "square.stack.3d.up.fill")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.white)
-            }
+            NetwichBrand.appIcon(size: 30)
+                .shadow(color: Palette.accent.opacity(0.4), radius: 10, y: 3)
 
             VStack(alignment: .leading, spacing: 0) {
                 Text("Netwich")

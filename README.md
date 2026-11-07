@@ -13,7 +13,17 @@ on your Mac: no account, no relay, no VPN subscription, no privileged daemon.
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![Tests](https://img.shields.io/badge/tests-31%20passing-brightgreen)](Tests)
 
-![Netwich demo](docs/demo.gif)
+<p align="center">
+  <img src="docs/screenshots/netwich-dashboard.jpg" alt="Netwich native macOS dashboard" width="100%">
+</p>
+
+<details>
+<summary><b>🎬 Click to preview interface walkthrough (animated)</b></summary>
+<br/>
+<p align="center">
+  <img src="docs/demo.gif" alt="Netwich UI Walkthrough" width="100%">
+</p>
+</details>
 
 ## Download
 

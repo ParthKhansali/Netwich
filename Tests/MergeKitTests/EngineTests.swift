@@ -2,7 +2,17 @@ import XCTest
 @testable import MergeKit
 
 final class EngineTests: XCTestCase {
-    func testSystemProxyManagerListing() {
+    /// These tests touch the host's real adapters, system proxy or the internet.
+    /// Hosted CI runners do not expose the same network surface, so they are opt-in.
+    private func requireIntegration() throws {
+        try XCTSkipUnless(
+            ProcessInfo.processInfo.environment["NETWICH_INTEGRATION"] == "1",
+            "Set NETWICH_INTEGRATION=1 to run tests that need real adapters or internet access."
+        )
+    }
+
+    func testSystemProxyManagerListing() throws {
+        try requireIntegration()
         let manager = SystemProxyManager()
         let services = manager.listServices()
         // Every macOS machine has at least Wi-Fi or Ethernet or Thunderbolt
@@ -59,7 +69,8 @@ final class EngineTests: XCTestCase {
         XCTAssertFalse(afterDelete.contains(where: { $0.id == item.id }))
     }
 
-    func testLinkInventoryDeduplication() {
+    func testLinkInventoryDeduplication() throws {
+        try requireIntegration()
         let inventory = LinkInventory()
         inventory.start()
         defer { inventory.stop() }
@@ -137,7 +148,8 @@ final class EngineTests: XCTestCase {
         XCTAssertEqual(item.cookies, "session=xyz")
     }
 
-    func testScopedRouteManagerDiscovery() {
+    func testScopedRouteManagerDiscovery() throws {
+        try requireIntegration()
         let manager = ScopedRouteManager.shared
         // On macOS with active tethering or wifi, discoverGateway discovers a valid IPv4
         let addresses = InterfaceScanner.scan()
@@ -150,7 +162,8 @@ final class EngineTests: XCTestCase {
         }
     }
 
-    func testRealParallelDownloadExecution() {
+    func testRealParallelDownloadExecution() throws {
+        try requireIntegration()
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDir) }
@@ -191,6 +204,7 @@ final class EngineTests: XCTestCase {
     }
 
     func testLocalProxySOCKS5DomainResolutionAndFallback() throws {
+        try requireIntegration()
         let scheduler = Scheduler()
         let server = LocalProxyServer(config: .init(port: 11082), scheduler: scheduler)
         try server.start()
@@ -240,6 +254,7 @@ final class EngineTests: XCTestCase {
     }
 
     func testLocalProxySOCKS5DomainNameResolution() throws {
+        try requireIntegration()
         let scheduler = Scheduler()
         let server = LocalProxyServer(config: .init(port: 11083), scheduler: scheduler)
         try server.start()

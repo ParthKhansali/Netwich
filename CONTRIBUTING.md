@@ -23,7 +23,9 @@ backdrop uses `MeshGradient` (macOS 15) behind an availability check.
 
 ## Before opening a pull request
 
-1. `swift test` — all tests must pass.
+1. `swift test` — all hermetic tests must pass. Run `NETWICH_INTEGRATION=1 swift test` when
+you touched proxies, routes or the download transport; those six tests need real adapters
+and internet access and are skipped on CI.
 2. `./Scripts/package.sh` if you touched packaging, entitlements or the extension
    build; it must produce a DMG and both ZIPs.
 3. Keep the engine free of UI imports and the UI free of subprocess work on the

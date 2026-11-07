@@ -35,7 +35,7 @@ xcodebuild \
   -project Merge.xcodeproj \
   -scheme Merge \
   -configuration Release \
-  -destination 'platform=macOS,arch=arm64' \
+  -destination 'platform=macOS' \
   CODE_SIGNING_ALLOWED=NO \
   CODE_SIGNING_REQUIRED=NO \
   CODE_SIGN_IDENTITY="" \

@@ -152,7 +152,8 @@ buffers, and minifying the extension bundles. The telemetry loop is 1 Hz, the UI
 
 ```bash
 brew install xcodegen
-swift test                     # 31 tests
+swift test                     # 25 hermetic tests
+NETWICH_INTEGRATION=1 swift test   # + 6 tests that need real adapters and internet
 ./Scripts/build.sh             # Debug build in build/Netwich.app
 ./Scripts/package.sh           # Release DMG + extension ZIPs in dist/
 ```

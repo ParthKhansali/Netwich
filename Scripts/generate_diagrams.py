@@ -1,351 +1,372 @@
 #!/usr/bin/env python3
 """
-Generates aesthetic, hand-drawn (Excalidraw / whiteboard blueprint style)
-vector diagrams for Netwich documentation and repository presentation.
+Generates Nothing Tech / Dot-Matrix styled architectural and technical diagrams
+for Netwich documentation and repository presentation.
+
+Uses embedded NDot57 (Nothing dot-matrix typeface) and NType82Mono (clean technical mono)
+with smoked glass cards, LED status indicators, and precision industrial layout.
 """
 
-import math
 import os
-import random
+import base64
+import subprocess
+from PIL import Image
 
-class Sketch:
-    def __init__(self, seed=42):
-        self.rng = random.Random(seed)
+FONTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
+ASSETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "assets")
 
-    def jitter(self, val, amount=1.5):
-        return val + self.rng.uniform(-amount, amount)
-
-    def rough_line(self, x1, y1, x2, y2, stroke="#F0F6FC", width=2.0, roughness=1.3, opacity=0.92, dash=""):
-        paths = []
-        for i in range(2):
-            dx = x2 - x1
-            dy = y2 - y1
-            dist = math.hypot(dx, dy)
-            bow = self.rng.uniform(-roughness * 2.0, roughness * 2.0)
-            nx = -dy / max(dist, 1)
-            ny = dx / max(dist, 1)
-            mid_x = (x1 + x2) / 2 + nx * bow
-            mid_y = (y1 + y2) / 2 + ny * bow
-            
-            overshoot = self.rng.uniform(-2, 2.5)
-            sx = x1 + self.rng.uniform(-roughness, roughness)
-            sy = y1 + self.rng.uniform(-roughness, roughness)
-            ex = x2 + (dx / max(dist, 1)) * overshoot
-            ey = y2 + (dy / max(dist, 1)) * overshoot
-            paths.append(f"M {sx:.1f},{sy:.1f} Q {mid_x:.1f},{mid_y:.1f} {ex:.1f},{ey:.1f}")
+def load_fonts():
+    ndot_path = os.path.join(FONTS_DIR, "Ndot57-Regular.otf")
+    mono_path = os.path.join(FONTS_DIR, "NType82Mono-Regular.otf")
+    
+    with open(ndot_path, "rb") as f:
+        b64_ndot = base64.b64encode(f.read()).decode("ascii")
+    with open(mono_path, "rb") as f:
+        b64_mono = base64.b64encode(f.read()).decode("ascii")
         
-        d = " ".join(paths)
-        dash_attr = f' stroke-dasharray="{dash}"' if dash else ""
-        return f'<path d="{d}" fill="none" stroke="{stroke}" stroke-width="{width}" stroke-linecap="round" stroke-linejoin="round" opacity="{opacity}"{dash_attr} />'
+    return b64_ndot, b64_mono
 
-    def rough_rect(self, x, y, w, h, stroke="#F0F6FC", fill="rgba(255,255,255,0.04)", width=2.0, rx=10, roughness=1.4):
-        bg_rect = f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" />'
-        e1 = self.rough_line(x + rx, y, x + w - rx, y, stroke, width, roughness)
-        e2 = self.rough_line(x + w, y + rx, x + w, y + h - rx, stroke, width, roughness)
-        e3 = self.rough_line(x + w - rx, y + h, x + rx, y + h, stroke, width, roughness)
-        e4 = self.rough_line(x, y + h - rx, x, y + rx, stroke, width, roughness)
-        c1 = f'M {x},{y+rx} Q {x},{y} {x+rx},{y}'
-        c2 = f'M {x+w-rx},{y} Q {x+w},{y} {x+w},{y+rx}'
-        c3 = f'M {x+w},{y+h-rx} Q {x+w},{y+h} {x+w-rx},{y+h}'
-        c4 = f'M {x+rx},{y+h} Q {x},{y+h} {x},{y+h-rx}'
-        corners = f'<path d="{c1} {c2} {c3} {c4}" fill="none" stroke="{stroke}" stroke-width="{width*0.8}" stroke-linecap="round" opacity="0.85" />'
-        return f"{bg_rect}\n  {e1}\n  {e2}\n  {e3}\n  {e4}\n  {corners}"
+B64_NDOT, B64_MONO = load_fonts()
 
-    def rough_arrow(self, x1, y1, x2, y2, stroke="#F0F6FC", width=2.0, curvature=0.0, label="", label_dy=-12):
-        dx = x2 - x1
-        dy = y2 - y1
-        dist = math.hypot(dx, dy)
-        nx = -dy / max(dist, 1)
-        ny = dx / max(dist, 1)
-        mid_x = (x1 + x2) / 2 + nx * curvature
-        mid_y = (y1 + y2) / 2 + ny * curvature
-        
-        stem = f'<path d="M {x1:.1f},{y1:.1f} Q {mid_x:.1f},{mid_y:.1f} {x2:.1f},{y2:.1f}" fill="none" stroke="{stroke}" stroke-width="{width}" stroke-linecap="round" />'
-        angle = math.atan2(y2 - mid_y, x2 - mid_x)
-        head_len = 13
-        h1_x = x2 - head_len * math.cos(angle - 0.42)
-        h1_y = y2 - head_len * math.sin(angle - 0.42)
-        h2_x = x2 - head_len * math.cos(angle + 0.42)
-        h2_y = y2 - head_len * math.sin(angle + 0.42)
-        head = f'<path d="M {h1_x:.1f},{h1_y:.1f} L {x2:.1f},{y2:.1f} L {h2_x:.1f},{h2_y:.1f}" fill="none" stroke="{stroke}" stroke-width="{width}" stroke-linecap="round" stroke-linejoin="round" />'
-        
-        text_markup = ""
-        if label:
-            tx = mid_x
-            ty = mid_y + label_dy
-            text_markup = f'<text x="{tx:.1f}" y="{ty:.1f}" fill="{stroke}" font-family="Caveat, cursive, sans-serif" font-size="17" font-weight="700" text-anchor="middle">{label}</text>'
-        return f"{stem}\n  {head}\n  {text_markup}"
-
-def create_architecture_diagram():
-    s = Sketch(seed=101)
-    w, h = 980, 530
-    svg = []
-    svg.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%" height="auto" style="background: #0B0F19; border-radius: 14px;">')
-    svg.append('''<defs>
+def shared_defs():
+    return f"""<defs>
   <style>
   /* <![CDATA[ */
-    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=JetBrains+Mono:wght@500;700&family=Inter:wght@500;600;700&display=swap');
-    .title { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 700; fill: #F0F6FC; }
-    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; fill: #94A3B8; }
-    .hand { font-family: 'Caveat', cursive, sans-serif; font-size: 20px; font-weight: 700; }
-    .hand-sm { font-family: 'Caveat', cursive, sans-serif; font-size: 16px; font-weight: 600; }
-    .badge { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    @font-face {{
+      font-family: 'NDot57';
+      src: url('data:font/opentype;base64,{B64_NDOT}') format('opentype');
+    }}
+    @font-face {{
+      font-family: 'NType82Mono';
+      src: url('data:font/opentype;base64,{B64_MONO}') format('opentype');
+    }}
+    .ndot-title {{ font-family: 'NDot57', monospace; font-size: 22px; fill: #FFFFFF; letter-spacing: 1.5px; }}
+    .ndot-head  {{ font-family: 'NDot57', monospace; font-size: 15px; fill: #FFFFFF; letter-spacing: 1px; }}
+    .ndot-stat  {{ font-family: 'NDot57', monospace; font-size: 24px; letter-spacing: 1px; }}
+    .mono-body  {{ font-family: 'NType82Mono', ui-monospace, monospace; font-size: 12px; fill: #94A3B8; letter-spacing: 0.5px; }}
+    .mono-code  {{ font-family: 'NType82Mono', ui-monospace, monospace; font-size: 11px; fill: #E2E8F0; }}
+    .tag        {{ font-family: 'NDot57', monospace; font-size: 10px; letter-spacing: 1px; }}
   /* ]]> */
   </style>
-  <pattern id="blueprint-grid" width="28" height="28" patternUnits="userSpaceOnUse">
-    <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#1E293B" stroke-width="0.7" opacity="0.65" />
+  <pattern id="dot-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+    <circle cx="12" cy="12" r="1" fill="#1E293B" opacity="0.65" />
   </pattern>
-</defs>''')
+</defs>"""
+
+def corner_crosshairs(x, y, w, h, stroke="#475569"):
+    crosses = []
+    for cx, cy in [(x, y), (x + w, y), (x, y + h), (x + w, y + h)]:
+        crosses.append(f'<path d="M {cx-5} {cy} L {cx+5} {cy} M {cx} {cy-5} L {cx} {cy+5}" stroke="{stroke}" stroke-width="1.2" />')
+    return "\n".join(crosses)
+
+def create_architecture_diagram():
+    w, h = 980, 530
+    svg = []
+    svg.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%" height="auto" style="background: #080A0F; border-radius: 12px;">')
+    svg.append(shared_defs())
+    svg.append(f'<rect width="{w}" height="{h}" rx="12" fill="#080A0F" />')
+    svg.append(f'<rect width="{w}" height="{h}" rx="12" fill="url(#dot-grid)" />')
     
-    svg.append(f'<rect width="{w}" height="{h}" rx="14" fill="#0B0F19" />')
-    svg.append(f'<rect width="{w}" height="{h}" rx="14" fill="url(#blueprint-grid)" opacity="0.85" />')
-    svg.append(s.rough_rect(14, 14, w - 28, h - 28, stroke="#334155", fill="none", width=1.4, rx=10))
-
-    # Header Title
-    svg.append(f'<text x="44" y="52" class="title" font-size="20">NETWICH SOCKET BINDING ARCHITECTURE</text>')
-    svg.append(f'<text x="44" y="74" class="hand" fill="#60A5FA" font-size="18">How local apps stack multiple physical links simultaneously</text>')
+    # Outer frame
+    svg.append(f'<rect x="12" y="12" width="{w-24}" height="{h-24}" rx="10" fill="none" stroke="#1E293B" stroke-width="1.5" />')
+    svg.append(corner_crosshairs(12, 12, w - 24, h - 24))
     
-    # 1. Source App Layer (Left)
-    svg.append(s.rough_rect(44, 105, 215, 165, stroke="#94A3B8", fill="rgba(30, 41, 59, 0.45)", width=1.8))
-    svg.append(f'<text x="64" y="136" class="title" font-size="16">Your Applications</text>')
-    svg.append(f'<text x="64" y="162" class="mono">• Safari &amp; Chrome</text>')
-    svg.append(f'<text x="64" y="185" class="mono">• curl, git, package CLI</text>')
-    svg.append(f'<text x="64" y="208" class="mono">• Netwich Downloader</text>')
-    svg.append(f'<text x="64" y="244" class="hand-sm" fill="#94A3B8">Seamless system proxy</text>')
-
-    # Arrow from Apps to Netwich Hub
-    svg.append(s.rough_arrow(260, 187, 345, 187, stroke="#F0F6FC", width=2.4, curvature=-3, label="SOCKS5 :1080", label_dy=-13))
-
-    # 2. Netwich Core Engine Hub (Center)
-    svg.append(s.rough_rect(350, 95, 265, 255, stroke="#60A5FA", fill="rgba(15, 23, 42, 0.85)", width=2.2))
-    svg.append(f'<rect x="368" y="112" width="115" height="22" rx="6" fill="#1E3A8A" />')
-    svg.append(f'<text x="376" y="127" class="badge" fill="#93C5FD">NETWICH CORE</text>')
-    svg.append(f'<text x="368" y="160" class="title" font-size="17" fill="#F0F6FC">Dynamic Flow Engine</text>')
+    # Header
+    svg.append(f'<circle cx="42" cy="42" r="4" fill="#FF3B30" />')
+    svg.append(f'<text x="54" y="46" class="tag" fill="#FF3B30">SPEC 01 // ARCHITECTURE</text>')
+    svg.append(f'<text x="42" y="74" class="ndot-title">NETWICH SOCKET BINDING ARCHITECTURE</text>')
+    svg.append(f'<text x="42" y="96" class="mono-body">DYNAMIC FLOW SCHEDULING • DUAL INTERFACE AGGREGATION • 100% LOCAL MAC KERNEL</text>')
     
-    # Hub internal features
-    svg.append(s.rough_rect(368, 175, 228, 42, stroke="#3B82F6", fill="rgba(59, 130, 246, 0.12)", width=1.2, rx=6))
-    svg.append(f'<text x="380" y="201" class="mono" fill="#E2E8F0" font-size="12">Weighted Least-Conns</text>')
+    # Card 1: Applications (Left)
+    svg.append(f'<rect x="42" y="120" width="225" height="245" rx="8" fill="rgba(15, 23, 42, 0.75)" stroke="#334155" stroke-width="1" />')
+    svg.append(f'<rect x="42" y="120" width="225" height="30" rx="8" fill="rgba(30, 41, 59, 0.5)" />')
+    svg.append(f'<circle cx="58" cy="135" r="3" fill="#38BDF8" />')
+    svg.append(f'<text x="68" y="139" class="tag" fill="#93C5FD">SOURCE LAYER</text>')
+    svg.append(f'<text x="58" y="174" class="ndot-head">LOCAL APPS</text>')
+    svg.append(f'<text x="58" y="202" class="mono-code">[01] Safari / Chrome</text>')
+    svg.append(f'<text x="58" y="224" class="mono-code">[02] curl / git / brew</text>')
+    svg.append(f'<text x="58" y="246" class="mono-code">[03] Netwich Engine</text>')
+    svg.append(f'<line x1="58" y1="268" x2="248" y2="268" stroke="#334155" stroke-dasharray="3,3" />')
+    svg.append(f'<text x="58" y="292" class="mono-body" fill="#64748B">System SOCKS5 Proxy</text>')
+    svg.append(f'<text x="58" y="314" class="ndot-head" font-size="14" fill="#38BDF8">127.0.0.1:1080</text>')
+    svg.append(f'<text x="58" y="334" class="mono-body" fill="#64748B">Zero Config Handshake</text>')
     
-    svg.append(s.rough_rect(368, 226, 228, 42, stroke="#10B981", fill="rgba(16, 185, 129, 0.12)", width=1.2, rx=6))
-    svg.append(f'<text x="380" y="252" class="mono" fill="#E2E8F0" font-size="12">EWMA Latency &amp; Probing</text>')
-
-    svg.append(s.rough_rect(368, 277, 228, 42, stroke="#A855F7", fill="rgba(168, 85, 247, 0.12)", width=1.2, rx=6))
-    svg.append(f'<text x="380" y="303" class="mono" fill="#E2E8F0" font-size="12">Socket Bound: IP_BOUND_IF</text>')
-
-    # Arrows from Netwich Hub to Adapters
-    svg.append(s.rough_arrow(615, 155, 715, 145, stroke="#3B82F6", width=2.6, curvature=-10, label="flow α", label_dy=-10))
-    svg.append(s.rough_arrow(615, 275, 715, 285, stroke="#10B981", width=2.6, curvature=10, label="flow β", label_dy=20))
-
-    # 3. Physical Adapters (Right Top & Right Bottom)
-    svg.append(s.rough_rect(720, 100, 215, 95, stroke="#3B82F6", fill="rgba(30, 58, 138, 0.25)", width=2.0))
-    svg.append(f'<text x="738" y="128" class="title" font-size="15" fill="#93C5FD">Wi-Fi (en0)</text>')
-    svg.append(f'<text x="738" y="150" class="mono" font-size="12">Rate: 85 Mbps</text>')
-    svg.append(f'<text x="738" y="170" class="mono" font-size="12">RTT: 18ms (Weight 1.0)</text>')
-
-    svg.append(s.rough_rect(720, 240, 215, 95, stroke="#10B981", fill="rgba(6, 78, 59, 0.25)", width=2.0))
-    svg.append(f'<text x="738" y="268" class="title" font-size="15" fill="#6EE7B7">USB Tether (en5)</text>')
-    svg.append(f'<text x="738" y="290" class="mono" font-size="12">Rate: 110 Mbps (5G)</text>')
-    svg.append(f'<text x="738" y="310" class="mono" font-size="12">RTT: 22ms (Weight 1.3)</text>')
-
-    # Downward arrows from adapters to combined pipe
-    svg.append(s.rough_arrow(795, 198, 795, 385, stroke="#60A5FA", width=2.0, curvature=0))
-    svg.append(s.rough_arrow(875, 338, 875, 385, stroke="#34D399", width=2.0, curvature=0))
-
-    # 4. Merged Output Pipe (Bottom Right)
-    svg.append(s.rough_rect(245, 390, 690, 95, stroke="#F59E0B", fill="rgba(245, 158, 11, 0.10)", width=2.2))
-    svg.append(f'<text x="268" y="422" class="title" font-size="17" fill="#FCD34D">Unified Combined Pipe = 195 Mbps Total Throughput</text>')
-    svg.append(f'<text x="268" y="446" class="mono" font-size="12" fill="#E2E8F0">Zero packet loss • Sub-100ms failover • Safe local proxy recovery</text>')
-    svg.append(f'<text x="268" y="470" class="hand" font-size="18" fill="#FBBF24">All flows combined automatically without remote multi-path proxies!</text>')
-
-    # Key callout badges (Bottom Left)
-    svg.append(s.rough_rect(44, 390, 185, 95, stroke="#334155", fill="rgba(15, 23, 42, 0.6)", width=1.4))
-    svg.append(f'<text x="60" y="420" class="hand" fill="#38BDF8">✓ 100% On-Mac</text>')
-    svg.append(f'<text x="60" y="446" class="hand" fill="#38BDF8">✓ Zero Cloud Relay</text>')
-    svg.append(f'<text x="60" y="472" class="hand" fill="#38BDF8">✓ No Root Daemons</text>')
-
+    # Arrow 1: Apps -> Hub
+    svg.append(f'<path d="M 267 242 L 348 242" stroke="#38BDF8" stroke-width="2" stroke-dasharray="4,3" />')
+    svg.append(f'<polygon points="348,238 356,242 348,246" fill="#38BDF8" />')
+    svg.append(f'<rect x="278" y="223" width="62" height="18" rx="4" fill="#080A0F" stroke="#38BDF8" stroke-width="1" />')
+    svg.append(f'<text x="309" y="235" class="tag" fill="#38BDF8" text-anchor="middle">TCP FLOW</text>')
+    
+    # Card 2: Core Hub (Center)
+    svg.append(f'<rect x="356" y="120" width="280" height="245" rx="8" fill="rgba(15, 23, 42, 0.85)" stroke="#38BDF8" stroke-width="1.5" />')
+    svg.append(f'<rect x="356" y="120" width="280" height="30" rx="8" fill="rgba(56, 189, 248, 0.12)" />')
+    svg.append(f'<circle cx="374" cy="135" r="3" fill="#38BDF8" />')
+    svg.append(f'<text x="384" y="139" class="tag" fill="#38BDF8">NETWICH CORE ENGINE</text>')
+    svg.append(f'<text x="374" y="174" class="ndot-head">DYNAMIC SCHEDULER</text>')
+    
+    stages = [
+        ("WEIGHTED LEAST-CONNS", "Load balancing across active links", "#38BDF8"),
+        ("EWMA LATENCY SENSING", "Real-time RTT &amp; throughput probes", "#10B981"),
+        ("IP_BOUND_IF CONTROL", "Kernel-level per-socket route bind", "#A855F7")
+    ]
+    sy = 194
+    for stitle, sdesc, scol in stages:
+        svg.append(f'<rect x="374" y="{sy}" width="244" height="42" rx="5" fill="rgba(30, 41, 59, 0.6)" stroke="{scol}" stroke-width="0.8" />')
+        svg.append(f'<circle cx="386" cy="{sy+15}" r="2.5" fill="{scol}" />')
+        svg.append(f'<text x="395" y="{sy+18}" class="ndot-head" font-size="11" fill="{scol}">{stitle}</text>')
+        svg.append(f'<text x="395" y="{sy+32}" class="mono-body" font-size="10" fill="#94A3B8">{sdesc}</text>')
+        sy += 48
+        
+    # Flow α (to Wi-Fi)
+    svg.append(f'<path d="M 636 170 C 665 170, 675 155, 706 155" fill="none" stroke="#38BDF8" stroke-width="2" />')
+    svg.append(f'<polygon points="706,151 714,155 706,159" fill="#38BDF8" />')
+    svg.append(f'<rect x="652" y="142" width="46" height="15" rx="3" fill="#080A0F" stroke="#38BDF8" stroke-width="0.8" />')
+    svg.append(f'<text x="675" y="153" class="tag" fill="#38BDF8" text-anchor="middle">FLOW α</text>')
+    
+    # Flow β (to 5G)
+    svg.append(f'<path d="M 636 310 C 665 310, 675 325, 706 325" fill="none" stroke="#10B981" stroke-width="2" />')
+    svg.append(f'<polygon points="706,321 714,325 706,329" fill="#10B981" />')
+    svg.append(f'<rect x="652" y="300" width="46" height="15" rx="3" fill="#080A0F" stroke="#10B981" stroke-width="0.8" />')
+    svg.append(f'<text x="675" y="311" class="tag" fill="#10B981" text-anchor="middle">FLOW β</text>')
+    
+    # Card 3: Adapter 01 (Wi-Fi en0)
+    svg.append(f'<rect x="714" y="120" width="224" height="110" rx="8" fill="rgba(15, 23, 42, 0.75)" stroke="#38BDF8" stroke-width="1" />')
+    svg.append(f'<rect x="714" y="120" width="224" height="28" rx="8" fill="rgba(56, 189, 248, 0.15)" />')
+    svg.append(f'<circle cx="730" cy="134" r="3" fill="#38BDF8" />')
+    svg.append(f'<text x="740" y="138" class="tag" fill="#38BDF8">ADAPTER 01 // WI-FI</text>')
+    svg.append(f'<text x="730" y="172" class="ndot-stat" fill="#38BDF8">85 MBPS</text>')
+    svg.append(f'<text x="730" y="196" class="mono-code">INTERFACE: en0 • RTT: 18ms</text>')
+    svg.append(f'<text x="730" y="215" class="mono-body" font-size="10">STATUS: ACTIVE (WEIGHT 1.0)</text>')
+    
+    # Card 4: Adapter 02 (Tether en5)
+    svg.append(f'<rect x="714" y="255" width="224" height="110" rx="8" fill="rgba(15, 23, 42, 0.75)" stroke="#10B981" stroke-width="1" />')
+    svg.append(f'<rect x="714" y="255" width="224" height="28" rx="8" fill="rgba(16, 185, 129, 0.15)" />')
+    svg.append(f'<circle cx="730" cy="269" r="3" fill="#10B981" />')
+    svg.append(f'<text x="740" y="273" class="tag" fill="#10B981">ADAPTER 02 // 5G TETHER</text>')
+    svg.append(f'<text x="730" y="307" class="ndot-stat" fill="#10B981">110 MBPS</text>')
+    svg.append(f'<text x="730" y="331" class="mono-code">INTERFACE: en5 • RTT: 22ms</text>')
+    svg.append(f'<text x="730" y="350" class="mono-body" font-size="10">STATUS: ACTIVE (WEIGHT 1.3)</text>')
+    
+    # Downward route lines from Adapters to Bottom Aggregated Bar
+    svg.append(f'<path d="M 826 230 L 826 385" stroke="#38BDF8" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.6" />')
+    svg.append(f'<path d="M 826 365 L 826 385" stroke="#10B981" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.6" />')
+    
+    # Bottom Unified Bar
+    svg.append(f'<rect x="42" y="385" width="896" height="108" rx="8" fill="rgba(15, 23, 42, 0.9)" stroke="#F59E0B" stroke-width="1.5" />')
+    svg.append(f'<circle cx="62" cy="406" r="3.5" fill="#F59E0B" />')
+    svg.append(f'<text x="74" y="410" class="tag" fill="#F59E0B">COMBINED AGGREGATED OUTPUT</text>')
+    svg.append(f'<text x="62" y="445" class="ndot-stat" font-size="28" fill="#FBBF24">195 MBPS TOTAL BANDWIDTH</text>')
+    svg.append(f'<text x="62" y="472" class="mono-body">CONCURRENT MULTI-STREAM FLOW DISPATCH • 80MS EWMA FAILOVER • ZERO INTERNET CLOUD RELAY</text>')
+    
+    # High-tech Badges on bottom right
+    bx = 648
+    svg.append(f'<rect x="{bx}" y="{425}" width="95" height="26" rx="4" fill="rgba(56, 189, 248, 0.12)" stroke="#38BDF8" stroke-width="1" />')
+    svg.append(f'<text x="{bx+47}" y="{442}" class="tag" fill="#38BDF8" text-anchor="middle">100% LOCAL</text>')
+    
+    bx = 752
+    svg.append(f'<rect x="{bx}" y="{425}" width="90" height="26" rx="4" fill="rgba(16, 185, 129, 0.12)" stroke="#10B981" stroke-width="1" />')
+    svg.append(f'<text x="{bx+45}" y="{442}" class="tag" fill="#10B981" text-anchor="middle">ZERO RELAY</text>')
+    
+    bx = 851
+    svg.append(f'<rect x="{bx}" y="{425}" width="72" height="26" rx="4" fill="rgba(245, 158, 11, 0.12)" stroke="#F59E0B" stroke-width="1" />')
+    svg.append(f'<text x="{bx+36}" y="{442}" class="tag" fill="#F59E0B" text-anchor="middle">&lt;80MS</text>')
+    
     svg.append('</svg>')
     return "\n".join(svg)
 
 def create_chunked_download_diagram():
-    s = Sketch(seed=202)
     w, h = 980, 480
     svg = []
-    svg.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%" height="auto" style="background: #0B0F19; border-radius: 14px;">')
-    svg.append('''<defs>
-  <style>
-  /* <![CDATA[ */
-    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=JetBrains+Mono:wght@500;700&family=Inter:wght@500;600;700&display=swap');
-    .title { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 700; fill: #F0F6FC; }
-    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; fill: #94A3B8; }
-    .hand { font-family: 'Caveat', cursive, sans-serif; font-size: 20px; font-weight: 700; }
-    .hand-sm { font-family: 'Caveat', cursive, sans-serif; font-size: 16px; font-weight: 600; }
-  /* ]]> */
-  </style>
-  <pattern id="download-grid" width="28" height="28" patternUnits="userSpaceOnUse">
-    <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#1E293B" stroke-width="0.7" opacity="0.65" />
-  </pattern>
-</defs>''')
+    svg.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%" height="auto" style="background: #080A0F; border-radius: 12px;">')
+    svg.append(shared_defs())
+    svg.append(f'<rect width="{w}" height="{h}" rx="12" fill="#080A0F" />')
+    svg.append(f'<rect width="{w}" height="{h}" rx="12" fill="url(#dot-grid)" />')
     
-    svg.append(f'<rect width="{w}" height="{h}" rx="14" fill="#0B0F19" />')
-    svg.append(f'<rect width="{w}" height="{h}" rx="14" fill="url(#download-grid)" opacity="0.85" />')
-    svg.append(s.rough_rect(14, 14, w - 28, h - 28, stroke="#334155", fill="none", width=1.4, rx=10))
-
+    # Outer frame
+    svg.append(f'<rect x="12" y="12" width="{w-24}" height="{h-24}" rx="10" fill="none" stroke="#1E293B" stroke-width="1.5" />')
+    svg.append(corner_crosshairs(12, 12, w - 24, h - 24))
+    
     # Header
-    svg.append(f'<text x="44" y="52" class="title" font-size="20">MULTI-LINK CHUNKED DOWNLOAD ACCELERATION</text>')
-    svg.append(f'<text x="44" y="74" class="hand" fill="#34D399" font-size="18">How Netwich cuts download durations in half with parallel byte-range streams</text>')
-
-    # 1. Traditional Single Link (Top Half)
-    svg.append(s.rough_rect(44, 96, 892, 135, stroke="#475569", fill="rgba(30, 41, 59, 0.3)", width=1.6))
-    svg.append(f'<text x="64" y="126" class="title" font-size="16" fill="#CBD5E1">Standard Single-Connection Download (Slow)</text>')
-    svg.append(f'<text x="64" y="148" class="mono" font-size="12">1x Wi-Fi Adapter (en0) @ 45 Mbps • 1 Sequential Stream • 2.4 GB Archive</text>')
+    svg.append(f'<circle cx="42" cy="42" r="4" fill="#34D399" />')
+    svg.append(f'<text x="54" y="46" class="tag" fill="#34D399">SPEC 02 // MULTI-LINK ACCELERATION</text>')
+    svg.append(f'<text x="42" y="74" class="ndot-title">PARALLEL CHUNKED DOWNLOAD PIPELINE</text>')
+    svg.append(f'<text x="42" y="96" class="mono-body">DYNAMIC BYTE-RANGE CONCURRENT STREAMS ACROSS INDEPENDENT PHYSICAL ADAPTERS</text>')
+    
+    # Top Panel: Standard Single Link (Slow)
+    svg.append(f'<rect x="42" y="118" width="896" height="130" rx="8" fill="rgba(15, 23, 42, 0.75)" stroke="#334155" stroke-width="1" />')
+    svg.append(f'<rect x="42" y="118" width="896" height="28" rx="8" fill="rgba(30, 41, 59, 0.5)" />')
+    svg.append(f'<circle cx="58" cy="132" r="3" fill="#EF4444" />')
+    svg.append(f'<text x="68" y="136" class="tag" fill="#FCA5A5">TRADITIONAL SINGLE LINK // BOTTLENECKED</text>')
+    svg.append(f'<text x="58" y="168" class="ndot-head" font-size="14" fill="#E2E8F0">1X WI-FI ADAPTER (en0) @ 45 MBPS</text>')
+    svg.append(f'<text x="58" y="188" class="mono-code">SINGLE SEQUENTIAL STREAM • 2.4 GB ARCHIVE • CONGESTION RESTRICTED</text>')
     
     # Progress Bar (Single slow stream)
-    svg.append(s.rough_rect(64, 162, 630, 36, stroke="#3B82F6", fill="rgba(59, 130, 246, 0.15)", width=1.6, rx=6))
-    svg.append(s.rough_rect(64, 162, 210, 36, stroke="#60A5FA", fill="rgba(59, 130, 246, 0.45)", width=1.6, rx=6))
-    svg.append(f'<text x="160" y="185" class="mono" font-size="12" fill="#FFFFFF">34% (Single Stream)</text>')
-    svg.append(f'<text x="720" y="186" class="hand" font-size="22" fill="#F87171">⏳ Takes 11m 40s</text>')
-
-    # 2. Netwich Parallel Chunking (Bottom Half)
-    svg.append(s.rough_rect(44, 245, 892, 195, stroke="#10B981", fill="rgba(16, 185, 129, 0.08)", width=2.0))
-    svg.append(f'<text x="64" y="275" class="title" font-size="16" fill="#6EE7B7">With Netwich: 4 Ranged Chunks Split Across 2 Adapters</text>')
-    svg.append(f'<text x="64" y="297" class="mono" font-size="12">Wi-Fi (en0) @ 45 Mbps + USB Phone 5G (en5) @ 85 Mbps = 130 Mbps Combined!</text>')
-
-    # 4 chunk boxes cleanly spaced
-    box_w = 142
-    gap = 16
-    start_x = 64
-    y_box = 315
-
-    # Chunk 1: Wi-Fi
-    x1 = start_x
-    svg.append(s.rough_rect(x1, y_box, box_w, 44, stroke="#3B82F6", fill="rgba(59, 130, 246, 0.35)", width=1.5, rx=6))
-    svg.append(f'<text x="{x1+12}" y="{y_box+20}" class="mono" font-size="11" fill="#FFFFFF">Chunk 1: 0-600M</text>')
-    svg.append(f'<text x="{x1+12}" y="{y_box+36}" class="hand-sm" fill="#93C5FD">via Wi-Fi (en0)</text>')
-
-    # Chunk 2: Phone 5G
-    x2 = x1 + box_w + gap
-    svg.append(s.rough_rect(x2, y_box, box_w, 44, stroke="#10B981", fill="rgba(16, 185, 129, 0.35)", width=1.5, rx=6))
-    svg.append(f'<text x="{x2+12}" y="{y_box+20}" class="mono" font-size="11" fill="#FFFFFF">Chunk 2: 600M-1.2G</text>')
-    svg.append(f'<text x="{x2+12}" y="{y_box+36}" class="hand-sm" fill="#6EE7B7">via Phone 5G (en5)</text>')
-
-    # Chunk 3: Wi-Fi
-    x3 = x2 + box_w + gap
-    svg.append(s.rough_rect(x3, y_box, box_w, 44, stroke="#3B82F6", fill="rgba(59, 130, 246, 0.35)", width=1.5, rx=6))
-    svg.append(f'<text x="{x3+12}" y="{y_box+20}" class="mono" font-size="11" fill="#FFFFFF">Chunk 3: 1.2G-1.8G</text>')
-    svg.append(f'<text x="{x3+12}" y="{y_box+36}" class="hand-sm" fill="#93C5FD">via Wi-Fi (en0)</text>')
-
-    # Chunk 4: Phone 5G
-    x4 = x3 + box_w + gap
-    svg.append(s.rough_rect(x4, y_box, box_w, 44, stroke="#10B981", fill="rgba(16, 185, 129, 0.35)", width=1.5, rx=6))
-    svg.append(f'<text x="{x4+12}" y="{y_box+20}" class="mono" font-size="11" fill="#FFFFFF">Chunk 4: 1.8G-2.4G</text>')
-    svg.append(f'<text x="{x4+12}" y="{y_box+36}" class="hand-sm" fill="#6EE7B7">via Phone 5G (en5)</text>')
-
-    # Result tag on right
-    svg.append(f'<text x="720" y="342" class="hand" font-size="24" fill="#34D399">⚡ Takes 4m 05s</text>')
-    svg.append(f'<text x="720" y="365" class="mono" font-size="12" fill="#FCD34D">(2.8x faster speedup)</text>')
-
-    # Bottom notes
-    svg.append(f'<text x="64" y="415" class="hand" font-size="18" fill="#FCD34D">✓ Dynamic range chunking • Automatic reassembly • SHA-256 verification</text>')
-
+    svg.append(f'<rect x="58" y="202" width="590" height="28" rx="5" fill="rgba(30, 41, 59, 0.6)" stroke="#475569" stroke-width="1" />')
+    svg.append(f'<rect x="58" y="202" width="200" height="28" rx="5" fill="rgba(56, 189, 248, 0.35)" />')
+    svg.append(f'<text x="158" y="221" class="tag" fill="#FFFFFF" text-anchor="middle">34% [SINGLE STREAM]</text>')
+    
+    # Time readout right
+    svg.append(f'<text x="670" y="224" class="ndot-stat" font-size="24" fill="#F87171">11M 40S</text>')
+    svg.append(f'<rect x="800" y="205" width="120" height="22" rx="4" fill="rgba(239, 68, 68, 0.15)" stroke="#EF4444" stroke-width="1" />')
+    svg.append(f'<text x="860" y="220" class="tag" fill="#F87171" text-anchor="middle">BOTTLENECKED</text>')
+    
+    # Bottom Panel: Netwich Parallel Multi-Link
+    svg.append(f'<rect x="42" y="262" width="896" height="190" rx="8" fill="rgba(15, 23, 42, 0.85)" stroke="#10B981" stroke-width="1.5" />')
+    svg.append(f'<rect x="42" y="262" width="896" height="28" rx="8" fill="rgba(16, 185, 129, 0.15)" />')
+    svg.append(f'<circle cx="58" cy="276" r="3" fill="#10B981" />')
+    svg.append(f'<text x="68" y="280" class="tag" fill="#6EE7B7">NETWICH MULTI-LINK CHUNKING // ACCELERATED</text>')
+    svg.append(f'<text x="58" y="312" class="ndot-head" font-size="14" fill="#6EE7B7">WI-FI (45 MBPS) + 5G TETHER (85 MBPS) = 130 MBPS COMBINED</text>')
+    
+    # 4 Parallel Chunk Boxes
+    chunks = [
+        ("CHUNK 01", "0000M - 0600M", "en0 [WI-FI]", "#38BDF8"),
+        ("CHUNK 02", "0600M - 1200M", "en5 [5G TETHER]", "#10B981"),
+        ("CHUNK 03", "1200M - 1800M", "en0 [WI-FI]", "#38BDF8"),
+        ("CHUNK 04", "1800M - 2400M", "en5 [5G TETHER]", "#10B981")
+    ]
+    cx = 58
+    c_w = 138
+    c_gap = 12
+    for ctitle, crange, cdev, ccolor in chunks:
+        svg.append(f'<rect x="{cx}" y="328" width="{c_w}" height="56" rx="6" fill="rgba(30, 41, 59, 0.7)" stroke="{ccolor}" stroke-width="1" />')
+        svg.append(f'<text x="{cx+10}" y="347" class="tag" fill="{ccolor}">{ctitle}</text>')
+        svg.append(f'<text x="{cx+10}" y="362" class="mono-code" font-size="9">{crange}</text>')
+        svg.append(f'<text x="{cx+10}" y="376" class="tag" font-size="9" fill="{ccolor}">{cdev}</text>')
+        cx += c_w + c_gap
+        
+    # Time readout right
+    svg.append(f'<text x="670" y="360" class="ndot-stat" font-size="26" fill="#34D399">04M 05S</text>')
+    svg.append(f'<rect x="800" y="340" width="120" height="26" rx="4" fill="rgba(16, 185, 129, 0.2)" stroke="#10B981" stroke-width="1" />')
+    svg.append(f'<text x="860" y="357" class="tag" fill="#34D399" text-anchor="middle">2.8X SPEEDUP</text>')
+    
+    # Technical footer
+    svg.append(f'<line x1="58" y1="400" x2="922" y2="400" stroke="#334155" stroke-dasharray="3,3" />')
+    svg.append(f'<text x="58" y="425" class="mono-body" fill="#FCD34D">[•] HTTP ACCEPT-RANGES PROBING  [•] SPARSE DISK PRE-ALLOCATION  [•] ZERO RAM SPIKES  [•] SHA-256 INTEGRITY</text>')
+    
     svg.append('</svg>')
     return "\n".join(svg)
 
 def create_failover_diagram():
-    s = Sketch(seed=303)
-    w, h = 980, 460
+    w, h = 980, 470
     svg = []
-    svg.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%" height="auto" style="background: #0B0F19; border-radius: 14px;">')
-    svg.append('''<defs>
-  <style>
-  /* <![CDATA[ */
-    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=JetBrains+Mono:wght@500;700&family=Inter:wght@500;600;700&display=swap');
-    .title { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 700; fill: #F0F6FC; }
-    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; fill: #94A3B8; }
-    .hand { font-family: 'Caveat', cursive, sans-serif; font-size: 20px; font-weight: 700; }
-    .hand-sm { font-family: 'Caveat', cursive, sans-serif; font-size: 16px; font-weight: 600; }
-    .badge { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-  /* ]]> */
-  </style>
-  <pattern id="failover-grid" width="28" height="28" patternUnits="userSpaceOnUse">
-    <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#1E293B" stroke-width="0.7" opacity="0.65" />
-  </pattern>
-</defs>''')
+    svg.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%" height="auto" style="background: #080A0F; border-radius: 12px;">')
+    svg.append(shared_defs())
+    svg.append(f'<rect width="{w}" height="{h}" rx="12" fill="#080A0F" />')
+    svg.append(f'<rect width="{w}" height="{h}" rx="12" fill="url(#dot-grid)" />')
     
-    svg.append(f'<rect width="{w}" height="{h}" rx="14" fill="#0B0F19" />')
-    svg.append(f'<rect width="{w}" height="{h}" rx="14" fill="url(#failover-grid)" opacity="0.85" />')
-    svg.append(s.rough_rect(14, 14, w - 28, h - 28, stroke="#334155", fill="none", width=1.4, rx=10))
-
+    # Outer frame
+    svg.append(f'<rect x="12" y="12" width="{w-24}" height="{h-24}" rx="10" fill="none" stroke="#1E293B" stroke-width="1.5" />')
+    svg.append(corner_crosshairs(12, 12, w - 24, h - 24))
+    
     # Header
-    svg.append(f'<text x="44" y="52" class="title" font-size="20">ZERO-DROP RESILIENT FAILOVER</text>')
-    svg.append(f'<text x="44" y="74" class="hand" fill="#FBBF24" font-size="18">How Netwich keeps connections alive when an adapter flickers or unplugs</text>')
-
-    col_w = 260
-    col_y = 105
-    col_h = 240
-
-    # Step 1: Normal Aggregation
-    c1_x = 44
-    svg.append(s.rough_rect(c1_x, col_y, col_w, col_h, stroke="#3B82F6", fill="rgba(30, 41, 59, 0.4)", width=1.8))
-    svg.append(f'<rect x="{c1_x+16}" y="122" width="75" height="20" rx="5" fill="#1E3A8A" />')
-    svg.append(f'<text x="{c1_x+24}" y="136" class="badge" fill="#93C5FD">PHASE 1</text>')
-    svg.append(f'<text x="{c1_x+16}" y="165" class="title" font-size="16" fill="#F0F6FC">Dual Active Links</text>')
-    svg.append(f'<text x="{c1_x+16}" y="195" class="mono" font-size="12">• Wi-Fi (en0): OK (18ms)</text>')
-    svg.append(f'<text x="{c1_x+16}" y="218" class="mono" font-size="12">• Tether (en5): OK (24ms)</text>')
-    svg.append(f'<text x="{c1_x+16}" y="248" class="mono" font-size="12" fill="#34D399">Traffic balanced 50/50</text>')
-    svg.append(f'<text x="{c1_x+16}" y="274" class="mono" font-size="12">195 Mbps Combined Rate</text>')
-    svg.append(f'<text x="{c1_x+16}" y="315" class="hand" font-size="17" fill="#60A5FA">Both pipes healthy &amp; active</text>')
-
+    svg.append(f'<circle cx="42" cy="42" r="4" fill="#FBBF24" />')
+    svg.append(f'<text x="54" y="46" class="tag" fill="#FBBF24">SPEC 03 // FAULT TOLERANCE</text>')
+    svg.append(f'<text x="42" y="74" class="ndot-title">ZERO-DROP RESILIENT FAILOVER TIMELINE</text>')
+    svg.append(f'<text x="42" y="96" class="mono-body">SUB-100MS CONNECTION DRIFT SENSING WITHOUT TERMINATING ACTIVE TCP FLOWS</text>')
+    
+    col_w = 268
+    col_y = 118
+    col_h = 250
+    
+    # Phase 01: Dual Active
+    p1_x = 42
+    svg.append(f'<rect x="{p1_x}" y="{col_y}" width="{col_w}" height="{col_h}" rx="8" fill="rgba(15, 23, 42, 0.75)" stroke="#38BDF8" stroke-width="1.2" />')
+    svg.append(f'<rect x="{p1_x}" y="{col_y}" width="{col_w}" height="28" rx="8" fill="rgba(56, 189, 248, 0.15)" />')
+    svg.append(f'<circle cx="{p1_x+16}" cy="{col_y+14}" r="3" fill="#38BDF8" />')
+    svg.append(f'<text x="{p1_x+26}" y="{col_y+18}" class="tag" fill="#93C5FD">PHASE 01 // DUAL ACTIVE</text>')
+    svg.append(f'<text x="{p1_x+16}" y="{col_y+54}" class="ndot-stat" font-size="20" fill="#38BDF8">BALANCED 50/50</text>')
+    svg.append(f'<text x="{p1_x+16}" y="{col_y+84}" class="mono-code">• Wi-Fi (en0): 18ms [OK]</text>')
+    svg.append(f'<text x="{p1_x+16}" y="{col_y+108}" class="mono-code">• Tether (en5): 22ms [OK]</text>')
+    svg.append(f'<line x1="{p1_x+16}" y1="{col_y+128}" x2="{p1_x+col_w-16}" y2="{col_y+128}" stroke="#334155" stroke-dasharray="3,3" />')
+    svg.append(f'<text x="{p1_x+16}" y="{col_y+152}" class="mono-body">Combined: 195 Mbps Total</text>')
+    svg.append(f'<text x="{p1_x+16}" y="{col_y+174}" class="mono-body">EWMA Latency: Nominal</text>')
+    svg.append(f'<rect x="{p1_x+16}" y="{col_y+200}" width="{col_w-32}" height="26" rx="4" fill="rgba(56, 189, 248, 0.1)" stroke="#38BDF8" stroke-width="0.8" />')
+    svg.append(f'<text x="{p1_x+col_w//2}" y="{col_y+217}" class="tag" fill="#38BDF8" text-anchor="middle">STATUS: NOMINAL</text>')
+    
     # Arrow 1 -> 2
-    svg.append(s.rough_arrow(c1_x + col_w + 6, 222, c1_x + col_w + 50, 222, stroke="#F59E0B", width=2.4, curvature=-6, label="Drop!", label_dy=-12))
-
-    # Step 2: Signal Drop
-    c2_x = c1_x + col_w + 56
-    svg.append(s.rough_rect(c2_x, col_y, col_w, col_h, stroke="#EF4444", fill="rgba(239, 68, 68, 0.08)", width=2.0))
-    svg.append(f'<rect x="{c2_x+16}" y="122" width="75" height="20" rx="5" fill="#7F1D1D" />')
-    svg.append(f'<text x="{c2_x+24}" y="136" class="badge" fill="#FCA5A5">PHASE 2</text>')
-    svg.append(f'<text x="{c2_x+16}" y="165" class="title" font-size="16" fill="#FCA5A5">Wi-Fi Sudden Drop</text>')
-    svg.append(f'<text x="{c2_x+16}" y="195" class="mono" font-size="12" fill="#F87171">✕ Wi-Fi (en0): Disconnected</text>')
-    svg.append(f'<text x="{c2_x+16}" y="218" class="mono" font-size="12">• Tether (en5): Active</text>')
-    svg.append(f'<text x="{c2_x+16}" y="248" class="mono" font-size="12" fill="#FBBF24">EWMA trigger in 80ms</text>')
-    svg.append(f'<text x="{c2_x+16}" y="274" class="mono" font-size="12">Wi-Fi unweighted</text>')
-    svg.append(f'<text x="{c2_x+16}" y="315" class="hand" font-size="17" fill="#F87171">Zero socket reset thrown!</text>')
-
+    svg.append(f'<path d="M {p1_x+col_w+4} {col_y+125} L {p1_x+col_w+40} {col_y+125}" stroke="#EF4444" stroke-width="1.8" stroke-dasharray="3,3" />')
+    svg.append(f'<polygon points="{p1_x+col_w+40},{col_y+121} {p1_x+col_w+46},{col_y+125} {p1_x+col_w+40},{col_y+129}" fill="#EF4444" />')
+    svg.append(f'<text x="{p1_x+col_w+23}" y="{col_y+115}" class="tag" fill="#EF4444" text-anchor="middle" font-size="9">DROP</text>')
+    
+    # Phase 02: Wi-Fi Drop
+    p2_x = p1_x + col_w + 46
+    svg.append(f'<rect x="{p2_x}" y="{col_y}" width="{col_w}" height="{col_h}" rx="8" fill="rgba(15, 23, 42, 0.75)" stroke="#EF4444" stroke-width="1.2" />')
+    svg.append(f'<rect x="{p2_x}" y="{col_y}" width="{col_w}" height="28" rx="8" fill="rgba(239, 68, 68, 0.15)" />')
+    svg.append(f'<circle cx="{p2_x+16}" cy="{col_y+14}" r="3" fill="#EF4444" />')
+    svg.append(f'<text x="{p2_x+26}" y="{col_y+18}" class="tag" fill="#FCA5A5">PHASE 02 // SIGNAL DROP</text>')
+    svg.append(f'<text x="{p2_x+16}" y="{col_y+54}" class="ndot-stat" font-size="20" fill="#EF4444">80MS SENSING</text>')
+    svg.append(f'<text x="{p2_x+16}" y="{col_y+84}" class="mono-code" fill="#F87171">✕ Wi-Fi (en0): Disconnected</text>')
+    svg.append(f'<text x="{p2_x+16}" y="{col_y+108}" class="mono-code">• Tether (en5): Active</text>')
+    svg.append(f'<line x1="{p2_x+16}" y1="{col_y+128}" x2="{p2_x+col_w-16}" y2="{col_y+128}" stroke="#334155" stroke-dasharray="3,3" />')
+    svg.append(f'<text x="{p2_x+16}" y="{col_y+152}" class="mono-body">Weight en0 reset to 0.0</text>')
+    svg.append(f'<text x="{p2_x+16}" y="{col_y+174}" class="mono-body">In-flight re-routed</text>')
+    svg.append(f'<rect x="{p2_x+16}" y="{col_y+200}" width="{col_w-32}" height="26" rx="4" fill="rgba(239, 68, 68, 0.1)" stroke="#EF4444" stroke-width="0.8" />')
+    svg.append(f'<text x="{p2_x+col_w//2}" y="{col_y+217}" class="tag" fill="#EF4444" text-anchor="middle">ZERO SOCKET RESETS</text>')
+    
     # Arrow 2 -> 3
-    svg.append(s.rough_arrow(c2_x + col_w + 6, 222, c2_x + col_w + 50, 222, stroke="#10B981", width=2.4, curvature=6, label="Shift", label_dy=-12))
-
-    # Step 3: Zero-Interruption Recovery
-    c3_x = c2_x + col_w + 56
-    svg.append(s.rough_rect(c3_x, col_y, col_w, col_h, stroke="#10B981", fill="rgba(16, 185, 129, 0.12)", width=2.0))
-    svg.append(f'<rect x="{c3_x+16}" y="122" width="75" height="20" rx="5" fill="#065F46" />')
-    svg.append(f'<text x="{c3_x+24}" y="136" class="badge" fill="#6EE7B7">PHASE 3</text>')
-    svg.append(f'<text x="{c3_x+16}" y="165" class="title" font-size="16" fill="#6EE7B7">Seamless Fallback</text>')
-    svg.append(f'<text x="{c3_x+16}" y="195" class="mono" font-size="12">• Tether (en5): 100% Load</text>')
-    svg.append(f'<text x="{c3_x+16}" y="218" class="mono" font-size="12" fill="#6EE7B7">✓ All streams preserved</text>')
-    svg.append(f'<text x="{c3_x+16}" y="248" class="mono" font-size="12">Downloads never reset</text>')
-    svg.append(f'<text x="{c3_x+16}" y="274" class="mono" font-size="12">Auto-resumes on return</text>')
-    svg.append(f'<text x="{c3_x+16}" y="315" class="hand" font-size="17" fill="#34D399">Uninterrupted browsing &amp; calls</text>')
-
-    # Bottom summary bar
-    svg.append(s.rough_rect(44, 370, 892, 58, stroke="#334155", fill="rgba(15, 23, 42, 0.65)", width=1.4))
-    svg.append(f'<text x="64" y="405" class="hand" font-size="18" fill="#FCD34D">Unlike traditional networking, your active transfers do not abort when one link drops.</text>')
-
+    svg.append(f'<path d="M {p2_x+col_w+4} {col_y+125} L {p2_x+col_w+40} {col_y+125}" stroke="#10B981" stroke-width="1.8" />')
+    svg.append(f'<polygon points="{p2_x+col_w+40},{col_y+121} {p2_x+col_w+46},{col_y+125} {p2_x+col_w+40},{col_y+129}" fill="#10B981" />')
+    svg.append(f'<text x="{p2_x+col_w+23}" y="{col_y+115}" class="tag" fill="#10B981" text-anchor="middle" font-size="9">SHIFT</text>')
+    
+    # Phase 03: Seamless Recovery
+    p3_x = p2_x + col_w + 46
+    svg.append(f'<rect x="{p3_x}" y="{col_y}" width="{col_w}" height="{col_h}" rx="8" fill="rgba(15, 23, 42, 0.75)" stroke="#10B981" stroke-width="1.2" />')
+    svg.append(f'<rect x="{p3_x}" y="{col_y}" width="{col_w}" height="28" rx="8" fill="rgba(16, 185, 129, 0.15)" />')
+    svg.append(f'<circle cx="{p3_x+16}" cy="{col_y+14}" r="3" fill="#10B981" />')
+    svg.append(f'<text x="{p3_x+26}" y="{col_y+18}" class="tag" fill="#6EE7B7">PHASE 03 // FULL FALLBACK</text>')
+    svg.append(f'<text x="{p3_x+16}" y="{col_y+54}" class="ndot-stat" font-size="20" fill="#10B981">100% PRESERVED</text>')
+    svg.append(f'<text x="{p3_x+16}" y="{col_y+84}" class="mono-code" fill="#6EE7B7">✓ Tether (en5): 100% Load</text>')
+    svg.append(f'<text x="{p3_x+16}" y="{col_y+108}" class="mono-code">✓ All TCP sockets alive</text>')
+    svg.append(f'<line x1="{p3_x+16}" y1="{col_y+128}" x2="{p3_x+col_w-16}" y2="{col_y+128}" stroke="#334155" stroke-dasharray="3,3" />')
+    svg.append(f'<text x="{p3_x+16}" y="{col_y+152}" class="mono-body">Zero download aborts</text>')
+    svg.append(f'<text x="{p3_x+16}" y="{col_y+174}" class="mono-body">Auto-resumes en0 on return</text>')
+    svg.append(f'<rect x="{p3_x+16}" y="{col_y+200}" width="{col_w-32}" height="26" rx="4" fill="rgba(16, 185, 129, 0.1)" stroke="#10B981" stroke-width="0.8" />')
+    svg.append(f'<text x="{p3_x+col_w//2}" y="{col_y+217}" class="tag" fill="#10B981" text-anchor="middle">ZERO SESSION DROPS</text>')
+    
+    # Bottom Summary Bar
+    svg.append(f'<rect x="42" y="386" width="896" height="64" rx="8" fill="rgba(15, 23, 42, 0.9)" stroke="#334155" stroke-width="1.2" />')
+    svg.append(f'<circle cx="62" cy="406" r="3.5" fill="#FBBF24" />')
+    svg.append(f'<text x="74" y="410" class="tag" fill="#FCD34D">HIGH-RESILIENCY GUARANTEE</text>')
+    svg.append(f'<text x="62" y="434" class="mono-body" fill="#E2E8F0">ACTIVE DOWNLOADS NEVER RESET • REAL-TIME CALLS NEVER TERMINATE • NO KERNEL PANICS</text>')
+    
     svg.append('</svg>')
     return "\n".join(svg)
 
-def main():
-    os.makedirs("docs/assets", exist_ok=True)
+def render_png(svg_path, png_path, target_w, target_h):
+    tmp_dir = "/tmp/netwich_render"
+    os.makedirs(tmp_dir, exist_ok=True)
+    subprocess.run(["qlmanage", "-t", "-s", "1920", "-o", tmp_dir, svg_path], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    base_name = os.path.basename(svg_path)
+    rendered_png = os.path.join(tmp_dir, f"{base_name}.png")
     
-    with open("docs/assets/netwich-architecture.svg", "w", encoding="utf-8") as f:
-        f.write(create_architecture_diagram())
-    print("Generated docs/assets/netwich-architecture.svg")
+    if os.path.exists(rendered_png):
+        img = Image.open(rendered_png)
+        # Crop letterboxing if any:
+        # qlmanage produces square 1920x1920 image centered with the SVG at top
+        aspect = target_w / target_h
+        calc_h = int(1920 / aspect)
+        cropped = img.crop((0, 0, 1920, calc_h))
+        cropped.save(png_path, "PNG", optimize=True)
+        print(f"Generated PNG: {png_path} ({cropped.size[0]}x{cropped.size[1]})")
 
-    with open("docs/assets/netwich-chunked-downloads.svg", "w", encoding="utf-8") as f:
-        f.write(create_chunked_download_diagram())
-    print("Generated docs/assets/netwich-chunked-downloads.svg")
-
-    with open("docs/assets/netwich-failover.svg", "w", encoding="utf-8") as f:
-        f.write(create_failover_diagram())
-    print("Generated docs/assets/netwich-failover.svg")
+def main():
+    os.makedirs(ASSETS_DIR, exist_ok=True)
+    
+    files = [
+        ("netwich-architecture.svg", "netwich-architecture.png", create_architecture_diagram(), 980, 530),
+        ("netwich-chunked-downloads.svg", "netwich-chunked-downloads.png", create_chunked_download_diagram(), 980, 480),
+        ("netwich-failover.svg", "netwich-failover.png", create_failover_diagram(), 980, 470)
+    ]
+    
+    for svg_name, png_name, svg_content, tw, th in files:
+        svg_path = os.path.join(ASSETS_DIR, svg_name)
+        png_path = os.path.join(ASSETS_DIR, png_name)
+        
+        with open(svg_path, "w", encoding="utf-8") as f:
+            f.write(svg_content)
+        print(f"Generated SVG: {svg_path}")
+        
+        render_png(svg_path, png_path, tw, th)
 
 if __name__ == "__main__":
     main()

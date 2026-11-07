@@ -100,6 +100,7 @@ fi
 
 rm -rf build
 mkdir -p build
+touch build/.metadata_never_index
 ditto "$APP" build/Netwich.app
 ln -sf Netwich.app build/Merge.app
 du -sh build/Netwich.app

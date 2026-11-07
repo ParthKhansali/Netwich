@@ -20,7 +20,7 @@ enum ByteFormat {
     }
 
     static func duration(_ seconds: TimeInterval) -> String {
-        guard seconds.isFinite, seconds > 0 else { return "—" }
+        guard seconds.isFinite, seconds > 0 else { return "--" }
         if seconds < 60 { return "\(Int(seconds))s" }
         if seconds < 3600 { return "\(Int(seconds) / 60)m \(Int(seconds) % 60)s" }
         return "\(Int(seconds) / 3600)h \((Int(seconds) % 3600) / 60)m"
@@ -326,10 +326,10 @@ private struct Sidebar: View {
             .background {
                 if selected {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .fill(.ultraThinMaterial)
+                        .fill(Color.white.opacity(0.10))
                         .overlay {
                             RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                .strokeBorder(Color.white.opacity(0.13), lineWidth: 0.7)
+                                .strokeBorder(Color.white.opacity(0.14), lineWidth: 0.7)
                         }
                         .matchedGeometryEffect(id: "nav.pill", in: pill)
                 }
@@ -372,7 +372,7 @@ private struct SetupSummaryCard: View {
                     .foregroundStyle(.secondary)
             }
             .padding(9)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(.ultraThinMaterial))
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.white.opacity(0.06)))
             .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.white.opacity(0.09), lineWidth: 0.7))
             .contentShape(Rectangle())
         }
@@ -530,7 +530,7 @@ private struct PowerControl: View {
             Task { await state.setOn(!state.isOn) }
         } label: {
             ZStack {
-                Circle().fill(.ultraThinMaterial)
+                Circle().fill(Color(red: 0.09, green: 0.11, blue: 0.18))
 
                 Circle()
                     .strokeBorder(
@@ -562,7 +562,7 @@ private struct PowerControl: View {
                 }
             }
             .frame(width: 84, height: 84)
-            .shadow(color: state.isOn ? Palette.accent.opacity(0.34) : .clear, radius: 22, y: 6)
+            .shadow(color: state.isOn ? Palette.accent.opacity(0.34) : .clear, radius: 8, y: 3)
             .contentShape(Circle())
         }
         .buttonStyle(.plain)

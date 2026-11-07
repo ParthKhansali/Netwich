@@ -49,6 +49,7 @@ BUILT_APP="$PRODUCTS/Netwich.app"
 
 rm -rf "$BUILD"
 mkdir -p "$BUILD" "$DIST"
+touch "$BUILD/.metadata_never_index" "$DIST/.metadata_never_index"
 ditto "$BUILT_APP" "$APP"
 
 # ---------------------------------------------------------------- extensions

@@ -43,6 +43,9 @@ enum NetwichBrand {
     static func nsImage(named name: String, template: Bool = false) -> NSImage? {
         if let image = NSImage(named: NSImage.Name(name)) {
             image.isTemplate = template
+            if name == "netwichTemplate" {
+                image.size = NSSize(width: 18, height: 14)
+            }
             return image
         }
         let bundle = Bundle.main
@@ -50,6 +53,9 @@ enum NetwichBrand {
             if let url = bundle.url(forResource: name, withExtension: ext),
                let image = NSImage(contentsOf: url) {
                 image.isTemplate = template
+                if name == "netwichTemplate" {
+                    image.size = NSSize(width: 18, height: 14)
+                }
                 return image
             }
         }
@@ -94,14 +100,18 @@ enum NetwichBrand {
         }
     }
 
-    /// Menu bar template icon.
+    /// Menu bar template icon with native 18x14 optical proportions.
     @ViewBuilder
     static func menuBarIcon(active: Bool) -> some View {
         if let image = nsImage(named: "netwichTemplate", template: true) {
             Image(nsImage: image)
-                .opacity(active ? 1.0 : 0.6)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 18, height: 14)
+                .opacity(active ? 1.0 : 0.65)
         } else {
             Image(systemName: active ? "square.stack.3d.up.fill" : "square.stack.3d.up")
+                .font(.system(size: 13, weight: .semibold))
         }
     }
 }
@@ -139,13 +149,13 @@ struct GlassSurface: ViewModifier {
         content
             .background {
                 ZStack {
-                    shape.fill(.ultraThinMaterial)
+                    shape.fill(Color(red: 0.08, green: 0.10, blue: 0.16).opacity(0.72))
                     shape.fill(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.10),
-                                Color.white.opacity(0.02),
-                                Color.black.opacity(0.06)
+                                Color.white.opacity(0.06),
+                                Color.white.opacity(0.01),
+                                Color.black.opacity(0.12)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -160,9 +170,9 @@ struct GlassSurface: ViewModifier {
                 shape.strokeBorder(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(strokeOpacity * 1.6),
-                            Color.white.opacity(strokeOpacity * 0.5),
-                            Color.white.opacity(strokeOpacity * 0.15)
+                            Color.white.opacity(strokeOpacity * 1.5),
+                            Color.white.opacity(strokeOpacity * 0.4),
+                            Color.white.opacity(strokeOpacity * 0.1)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -170,24 +180,10 @@ struct GlassSurface: ViewModifier {
                     lineWidth: 1
                 )
             }
-            .overlay {
-                // Inner top highlight: the "glass edge" that sells the material.
-                shape
-                    .inset(by: 0.5)
-                    .stroke(Color.white.opacity(0.10), lineWidth: 0.6)
-                    .blur(radius: 0.4)
-                    .mask(
-                        LinearGradient(
-                            colors: [.white, .clear],
-                            startPoint: .top,
-                            endPoint: .center
-                        )
-                    )
-            }
             .shadow(
-                color: Color.black.opacity(isElevated ? 0.30 : 0.12),
-                radius: isElevated ? 22 : 8,
-                y: isElevated ? 12 : 3
+                color: Color.black.opacity(isElevated ? 0.22 : 0.08),
+                radius: isElevated ? 6 : 3,
+                y: isElevated ? 2 : 1
             )
             .clipShape(shape)
     }
@@ -338,7 +334,7 @@ struct GlassButtonStyle: ButtonStyle {
                     .fill(
                         isProminent
                             ? AnyShapeStyle(LinearGradient(colors: [tint.opacity(0.95), tint.opacity(0.72)], startPoint: .top, endPoint: .bottom))
-                            : AnyShapeStyle(.ultraThinMaterial)
+                            : AnyShapeStyle(Color(red: 0.12, green: 0.14, blue: 0.22).opacity(0.85))
                     )
             }
             .overlay {
@@ -520,8 +516,9 @@ struct Sparkline: View {
                         LinearGradient(colors: [tint, tint.opacity(0.65)], startPoint: .leading, endPoint: .trailing),
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
                     )
-                    .shadow(color: tint.opacity(0.55), radius: 6)
+                    .shadow(color: tint.opacity(0.35), radius: 4)
             }
+            .drawingGroup()
             .animation(Motion.fade, value: maxValue)
         }
     }
@@ -592,27 +589,41 @@ struct MeterBar: View {
 
 // MARK: - Window chrome
 
-/// Makes the hosting window borderless enough to let the backdrop show through while
-/// keeping the traffic lights and native resizing.
+/// Configures the hosting window once upon presentation, ensuring opaque GPU compositing
+/// and smooth cursor tracking.
 struct WindowChrome: NSViewRepresentable {
+    final class Coordinator {
+        var didConfigure = false
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
-        DispatchQueue.main.async { configure(view.window) }
+        DispatchQueue.main.async {
+            guard !context.coordinator.didConfigure, let window = view.window else { return }
+            context.coordinator.didConfigure = true
+            configure(window)
+        }
         return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        DispatchQueue.main.async { configure(nsView.window) }
+        if !context.coordinator.didConfigure, let window = nsView.window {
+            context.coordinator.didConfigure = true
+            configure(window)
+        }
     }
 
-    private func configure(_ window: NSWindow?) {
-        guard let window else { return }
+    private func configure(_ window: NSWindow) {
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.styleMask.insert(.fullSizeContentView)
-        window.isMovableByWindowBackground = true
-        window.backgroundColor = .clear
-        window.isOpaque = false
+        window.isMovableByWindowBackground = false
+        window.backgroundColor = NSColor(red: 0.047, green: 0.055, blue: 0.086, alpha: 1.0)
+        window.isOpaque = true
         window.hasShadow = true
         window.toolbarStyle = .unifiedCompact
     }

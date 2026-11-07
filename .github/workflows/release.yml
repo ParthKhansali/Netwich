@@ -16,6 +16,8 @@ jobs:
   release:
     name: Build and publish
     runs-on: macos-15
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,28 +31,61 @@ jobs:
       - name: Build DMG and extension archives
         run: ./Scripts/package.sh
 
+      - name: Verify artifacts
+        run: |
+          set -euo pipefail
+          ls -lh dist
+          for f in dist/*.dmg dist/*.zip; do
+            test -s "$f" || { echo "missing or empty: $f"; exit 1; }
+          done
+
+      # The GitHub API occasionally refuses a connection from hosted runners.
+      # Uploading through gh with explicit retries keeps a transient timeout from
+      # failing an otherwise successful release.
       - name: Publish release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          name: Netwich ${{ github.event.inputs.tag || github.ref_name }}
-          generate_release_notes: true
-          fail_on_unmatched_files: true
-          body: |
-            **Download**
+        run: |
+          set -euo pipefail
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          NOTES="$RUNNER_TEMP/notes.md"
+          cat > "$NOTES" <<'NOTES'
+          **Download**
 
-            | File | For |
-            | --- | --- |
-            | `Netwich-*.dmg` | The macOS app. Open it and drag Netwich into Applications. |
-            | `Netwich-Extension-Chromium-*.zip` | Chrome, Brave, Edge and Arc |
-            | `Netwich-Extension-Firefox-*.zip` | Firefox |
+          | File | For |
+          | --- | --- |
+          | `Netwich-*.dmg` | The macOS app. Open it and drag Netwich onto Applications. |
+          | `Netwich-Extension-Chromium-*.zip` | Chrome, Brave, Edge and Arc |
+          | `Netwich-Extension-Firefox-*.zip` | Firefox |
 
-            The build is ad-hoc signed. On first launch macOS may block it: open
-            **System Settings → Privacy & Security → Open Anyway**, or right-click the
-            app and choose **Open**. The app's onboarding links straight to that pane.
+          The build is ad-hoc signed. On first launch macOS may block it: open **System Settings → Privacy & Security → Open Anyway**, or right-click the app and choose **Open**. The app's onboarding links straight to that pane.
 
-            The browser extension is installed manually because no browser allows an app
-            to sideload one: unzip, enable Developer mode, then **Load unpacked**.
-          files: |
-            dist/*.dmg
-            dist/*.zip
+          The browser extension is installed manually because no browser lets an app sideload one: unzip it, enable Developer mode, then **Load unpacked**.
+          NOTES
+
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            for attempt in 1 2 3 4; do
+              if gh release create "$TAG" --verify-tag --title "Netwich $TAG" --notes-file "$NOTES"; then
+                break
+              fi
+              echo "create attempt $attempt failed, retrying"
+              sleep $((attempt * 10))
+            done
+          fi
+
+          for attempt in 1 2 3 4 5; do
+            if gh release upload "$TAG" dist/*.dmg dist/*.zip --clobber; then
+              break
+            fi
+            echo "upload attempt $attempt failed, retrying"
+            sleep $((attempt * 10))
+          done
+
+          for attempt in 1 2 3; do
+            if gh release edit "$TAG" --title "Netwich $TAG" --notes-file "$NOTES"; then
+              break
+            fi
+            sleep 5
+          done
+
+          COUNT=$(gh release view "$TAG" --json assets --jq '.assets | length')
+          echo "published assets: $COUNT"
+          test "$COUNT" -ge 4

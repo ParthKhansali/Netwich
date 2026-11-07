@@ -20,9 +20,16 @@ public final class SystemProxyManager: @unchecked Sendable {
 
     public init() {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let mergeDir = appSupport.appendingPathComponent("Merge", isDirectory: true)
-        try? FileManager.default.createDirectory(at: mergeDir, withIntermediateDirectories: true)
-        self.stateFileURL = mergeDir.appendingPathComponent("proxy_state.json")
+        let netwichDir = appSupport.appendingPathComponent("Netwich", isDirectory: true)
+        let legacyMergeDir = appSupport.appendingPathComponent("Merge", isDirectory: true)
+        let legacyFile = legacyMergeDir.appendingPathComponent("proxy_state.json")
+        let netwichFile = netwichDir.appendingPathComponent("proxy_state.json")
+
+        try? FileManager.default.createDirectory(at: netwichDir, withIntermediateDirectories: true)
+        if FileManager.default.fileExists(atPath: legacyFile.path) && !FileManager.default.fileExists(atPath: netwichFile.path) {
+            try? FileManager.default.copyItem(at: legacyFile, to: netwichFile)
+        }
+        self.stateFileURL = netwichFile
 
         // Run recovery check on startup in case previous run crashed
         cleanupIfStale()

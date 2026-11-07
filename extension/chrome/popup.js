@@ -42,7 +42,7 @@
       return null;
     }
   }
-  async function openMergeApp() {
+  async function openNetwichApp() {
     if (activePort !== null) {
       try {
         const res = await fetch(`http://127.0.0.1:${activePort}/open`, {
@@ -55,6 +55,7 @@
     }
     return false;
   }
+  var openMergeApp = openNetwichApp;
   async function sendDownloadAction(path, payload) {
     if (activePort === null) {
       const reached = await reach();

@@ -32,6 +32,18 @@
 	<string>Netwich saves your downloads to the folder you choose, usually Downloads.</string>
 	<key>NSSystemExtensionUsageDescription</key>
 	<string>Netwich spreads your internet traffic across your active connections. Nothing is sent anywhere except to the sites you visit.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>dev.parth.netwich</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>netwich</string>
+				<string>merge</string>
+			</array>
+		</dict>
+	</array>
 	<key>SUFeedURL</key>
 	<string></string>
 </dict>

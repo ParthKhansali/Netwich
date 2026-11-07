@@ -1,5 +1,8 @@
 import Foundation
 import Network
+#if canImport(AppKit)
+import AppKit
+#endif
 
 public enum DownloadStatus: Codable, Sendable, Equatable {
     case queued
@@ -146,7 +149,12 @@ public final class DownloadItem: @unchecked Sendable, Identifiable {
     }
 
     public var partFileURL: URL {
-        destinationFolder.appendingPathComponent("\(filename).merge-part")
+        let netwichPart = destinationFolder.appendingPathComponent("\(filename).netwich-part")
+        let legacyMergePart = destinationFolder.appendingPathComponent("\(filename).merge-part")
+        if FileManager.default.fileExists(atPath: legacyMergePart.path) && !FileManager.default.fileExists(atPath: netwichPart.path) {
+            return legacyMergePart
+        }
+        return netwichPart
     }
 
     public var metaFileURL: URL {
@@ -630,6 +638,11 @@ public final class DownloadManager: @unchecked Sendable {
                     item.status = .completed
                     item.downloadedBytes = item.totalBytes
                     self.notifyChange()
+                    #if canImport(AppKit)
+                    DispatchQueue.main.async {
+                        NSSound(named: "Glass")?.play()
+                    }
+                    #endif
                     return
                 }
 
@@ -658,6 +671,13 @@ public final class DownloadManager: @unchecked Sendable {
                 item.speedBytesPerSec = 0
                 self.saveHistory()
                 self.notifyChange()
+
+                #if canImport(AppKit)
+                DispatchQueue.main.async {
+                    NSSound(named: "Glass")?.play()
+                    NSApp?.requestUserAttention(.informationalRequest)
+                }
+                #endif
 
             } catch {
                 if Task.isCancelled { return }
@@ -1113,9 +1133,16 @@ public final class DownloadManager: @unchecked Sendable {
 
     private var historyFileURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let mergeDir = appSupport.appendingPathComponent("Merge", isDirectory: true)
-        try? FileManager.default.createDirectory(at: mergeDir, withIntermediateDirectories: true)
-        return mergeDir.appendingPathComponent("downloads_history.json")
+        let netwichDir = appSupport.appendingPathComponent("Netwich", isDirectory: true)
+        let legacyMergeDir = appSupport.appendingPathComponent("Merge", isDirectory: true)
+        let legacyHistory = legacyMergeDir.appendingPathComponent("downloads_history.json")
+        let netwichHistory = netwichDir.appendingPathComponent("downloads_history.json")
+
+        try? FileManager.default.createDirectory(at: netwichDir, withIntermediateDirectories: true)
+        if FileManager.default.fileExists(atPath: legacyHistory.path) && !FileManager.default.fileExists(atPath: netwichHistory.path) {
+            try? FileManager.default.copyItem(at: legacyHistory, to: netwichHistory)
+        }
+        return netwichHistory
     }
 
     public func saveHistory() {

@@ -180,6 +180,18 @@ public struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .openNewDownloadSheet)) { _ in
             showNewDownloadSheet = true
         }
+        .onDrop(of: [.url, .utf8PlainText], isTargeted: nil) { providers in
+            guard let provider = providers.first else { return false }
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                if let url = url, url.scheme == "http" || url.scheme == "https" {
+                    DispatchQueue.main.async {
+                        state.addDownload(url: url)
+                        selectedTab = .downloads
+                    }
+                }
+            }
+            return true
+        }
     }
 }
 

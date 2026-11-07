@@ -29,7 +29,7 @@
     activePort = null;
     return results.includes("update") ? "update" : "closed";
   }
-  async function openMergeApp() {
+  async function openNetwichApp() {
     if (activePort !== null) {
       try {
         const res = await fetch(`http://127.0.0.1:${activePort}/open`, {
@@ -42,6 +42,7 @@
     }
     return false;
   }
+  var openMergeApp = openNetwichApp;
 
   // extension/src/api.ts
   var api = globalThis.browser ?? chrome;

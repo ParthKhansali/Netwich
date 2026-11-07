@@ -18,9 +18,16 @@ public final class ScopedRouteManager: @unchecked Sendable {
 
     public init() {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let mergeDir = appSupport.appendingPathComponent("Merge", isDirectory: true)
-        try? FileManager.default.createDirectory(at: mergeDir, withIntermediateDirectories: true)
-        self.stateFileURL = mergeDir.appendingPathComponent("scoped_routes.json")
+        let netwichDir = appSupport.appendingPathComponent("Netwich", isDirectory: true)
+        let legacyMergeDir = appSupport.appendingPathComponent("Merge", isDirectory: true)
+        let legacyFile = legacyMergeDir.appendingPathComponent("scoped_routes.json")
+        let netwichFile = netwichDir.appendingPathComponent("scoped_routes.json")
+
+        try? FileManager.default.createDirectory(at: netwichDir, withIntermediateDirectories: true)
+        if FileManager.default.fileExists(atPath: legacyFile.path) && !FileManager.default.fileExists(atPath: netwichFile.path) {
+            try? FileManager.default.copyItem(at: legacyFile, to: netwichFile)
+        }
+        self.stateFileURL = netwichFile
 
         // Cleanup any leftover routes from previous crashes
         cleanupStale()

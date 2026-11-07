@@ -1,25 +1,27 @@
 import { api } from './api';
 
-export interface MergeExtensionSettings {
+export interface NetwichExtensionSettings {
   capture: boolean;
   sites: string[];
   skipSmall: boolean;
   minMegabytes: number;
 }
 
-export const DEFAULTS: MergeExtensionSettings = {
+export type MergeExtensionSettings = NetwichExtensionSettings;
+
+export const DEFAULTS: NetwichExtensionSettings = {
   capture: true,
   sites: [],
   skipSmall: false,
   minMegabytes: 5
 };
 
-export async function loadSettings(): Promise<MergeExtensionSettings> {
+export async function loadSettings(): Promise<NetwichExtensionSettings> {
   const stored = await api.storage.local.get(DEFAULTS);
-  return { ...DEFAULTS, ...stored } as MergeExtensionSettings;
+  return { ...DEFAULTS, ...stored } as NetwichExtensionSettings;
 }
 
-export function saveSettings(patch: Partial<MergeExtensionSettings>): Promise<void> {
+export function saveSettings(patch: Partial<NetwichExtensionSettings>): Promise<void> {
   return api.storage.local.set(patch);
 }
 

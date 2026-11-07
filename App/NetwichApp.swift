@@ -26,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 @main
-struct MergeApp: App {
+struct NetwichApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var state = AppState()
 
@@ -38,6 +38,21 @@ struct MergeApp: App {
                     appDelegate.appState = state
                     NSApplication.shared.setActivationPolicy(.regular)
                     NSApplication.shared.activate(ignoringOtherApps: true)
+                }
+                .onOpenURL { url in
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+                    for window in NSApplication.shared.windows {
+                        window.makeKeyAndOrderFront(nil)
+                    }
+                    if url.scheme == "netwich" || url.scheme == "merge" {
+                        if url.host == "download" || url.path.contains("download") {
+                            if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                               let targetUrlStr = components.queryItems?.first(where: { $0.name == "url" })?.value,
+                               let targetUrl = URL(string: targetUrlStr) {
+                                state.addDownload(url: targetUrl)
+                            }
+                        }
+                    }
                 }
         }
         .windowResizability(.contentMinSize)

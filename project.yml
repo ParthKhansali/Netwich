@@ -39,7 +39,7 @@ targets:
         PRODUCT_NAME: Netwich
         PRODUCT_BUNDLE_IDENTIFIER: dev.parth.merge
         INFOPLIST_FILE: App/Info.plist
-        CODE_SIGN_ENTITLEMENTS: App/Merge.entitlements
+        CODE_SIGN_ENTITLEMENTS: App/Netwich.entitlements
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
     postBuildScripts:

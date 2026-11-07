@@ -81,7 +81,7 @@ if [ -n "${CODE_SIGN_IDENTITY:-}" ]; then
     --identifier dev.parth.merge.proxy \
     -s "$CODE_SIGN_IDENTITY" "$DEST/MergeProxy.systemextension"
   codesign --force --options runtime --timestamp \
-    --entitlements App/Merge.entitlements \
+    --entitlements App/Netwich.entitlements \
     -s "$CODE_SIGN_IDENTITY" "$APP"
 fi
 

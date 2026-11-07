@@ -87,7 +87,7 @@ export async function fetchLiveStatus(): Promise<AppStatus | null> {
   }
 }
 
-export async function openMergeApp(): Promise<boolean> {
+export async function openNetwichApp(): Promise<boolean> {
   if (activePort !== null) {
     try {
       const res = await fetch(`http://127.0.0.1:${activePort}/open`, {
@@ -101,6 +101,8 @@ export async function openMergeApp(): Promise<boolean> {
   }
   return false;
 }
+
+export const openMergeApp = openNetwichApp;
 
 export async function sendDownloadHandoff(
   request: AddDownloadRequest

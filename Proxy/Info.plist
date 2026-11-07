@@ -21,7 +21,7 @@
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSSystemExtensionUsageDescription</key>
-	<string>Merge uses a system extension to spread your internet traffic across your connections. Nothing is sent anywhere except to the sites you visit.</string>
+	<string>Netwich uses a system extension to spread your internet traffic across your connections. Nothing is sent anywhere except to the sites you visit.</string>
 	<key>NEMachServiceName</key>
 	<string>$(AppIdentifierPrefix)dev.parth.merge.proxy</string>
 	<key>NSExtension</key>

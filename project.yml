@@ -48,7 +48,7 @@ targets:
         script: |
           set -eu
           SRC="${BUILT_PRODUCTS_DIR}/MergeProxy.systemextension"
-          DST="${CONTENTS_FOLDER_PATH}/Library/System Extensions"
+          DST="${TARGET_BUILD_DIR}/${CONTENTS_FOLDER_PATH}/Library/System Extensions"
           if [ ! -d "$SRC" ]; then
             echo "note: MergeProxy.systemextension not built yet; skipping embed"
             exit 0

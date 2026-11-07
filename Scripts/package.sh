@@ -183,6 +183,10 @@ if [ "${NOTARIZE:-0}" = "1" ] && [ -n "$IDENTITY" ]; then
   xcrun stapler staple "$DMG"
 fi
 
+# Clean up intermediate build bundles so they never register with LaunchServices or Raycast
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$APP" 2>/dev/null || true
+rm -rf "$BUILD"
+
 echo ""
 echo "==> done"
 ls -lh "$DIST"

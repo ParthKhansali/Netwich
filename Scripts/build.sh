@@ -103,5 +103,6 @@ mkdir -p build
 touch build/.metadata_never_index
 ditto "$APP" build/Netwich.app
 ln -sf Netwich.app build/Merge.app
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u build/Netwich.app 2>/dev/null || true
 du -sh build/Netwich.app
 echo "==> build/Netwich.app is ready"

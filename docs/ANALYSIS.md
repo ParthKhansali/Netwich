@@ -228,6 +228,7 @@ the separate extension archives, and the real permission story.
 2. There is **no automated installer** for the browser extension: browsers do not allow one
    app to sideload into another. The best possible experience is what ships here — a ZIP, a
    revealed folder, and copy-ready steps.
-3. Visual verification of the new UI was **not possible on this machine**: the app launches,
-   but `screencapture -l` is blocked without Screen Recording permission. Build and type
-   checking pass; appearance should be reviewed on screen.
+3. The interface was verified by capturing every window from the installed 0.1.0 build; the
+   screenshots and demo in the README come from those captures. Behaviour that needs two live
+   links (real aggregation, elevated proxy changes) still has to be exercised on hardware with
+   a second connection.

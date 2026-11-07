@@ -42,26 +42,30 @@ mkdir -p "$DEST"
 rm -rf "$DEST/MergeProxy.systemextension"
 ditto "$EXTENSION" "$DEST/MergeProxy.systemextension"
 
-# Build and bundle browser extension
+# Build and bundle browser extension.
+# The compiled JS is committed, so a missing node/esbuild/network must never fail
+# the app build — it only means the TypeScript sources were not re-bundled.
 echo "==> bundle browser extensions"
-if command -v npx >/dev/null 2>&1; then
-  npx esbuild extension/src/popup.ts --bundle --outfile=extension/chrome/popup.js --format=iife --platform=browser
-  npx esbuild extension/src/options.ts --bundle --outfile=extension/chrome/options.js --format=iife --platform=browser
-  npx esbuild extension/src/background.ts --bundle --outfile=extension/chrome/background.js --format=iife --platform=browser
-  npx esbuild extension/src/content.ts --bundle --outfile=extension/chrome/content.js --format=iife --platform=browser
-  cp extension/chrome/popup.html extension/firefox/popup.html
-  cp extension/chrome/options.html extension/firefox/options.html
-  cp extension/chrome/ui.css extension/firefox/ui.css
-  cp extension/chrome/popup.js extension/firefox/popup.js
-  cp extension/chrome/options.js extension/firefox/options.js
-  cp extension/chrome/background.js extension/firefox/background.js
-  cp extension/chrome/content.js extension/firefox/content.js
-  cp extension/chrome/manifest.json extension/
-  cp extension/chrome/*.html extension/
-  cp extension/chrome/*.css extension/
-  cp extension/chrome/*.js extension/
-  cp -r extension/chrome/icons extension/
+if command -v npx >/dev/null 2>&1 && [ -d extension/src ]; then
+  for entry in popup options background content; do
+    npx --yes esbuild "extension/src/$entry.ts" \
+      --bundle --minify \
+      --outfile="extension/chrome/$entry.js" \
+      --format=iife --platform=browser \
+      || echo "note: esbuild skipped $entry.ts (using committed bundle)"
+  done
+
+  for f in popup.html options.html ui.css popup.js options.js background.js content.js; do
+    [ -f "extension/chrome/$f" ] && cp "extension/chrome/$f" "extension/firefox/$f"
+  done
+  [ -d extension/chrome/icons ] && ditto extension/chrome/icons extension/firefox/icons
 fi
+
+# Refresh the loose root copy that older docs point at, without clobbering the
+# per-browser manifests.
+for f in popup.html options.html ui.css popup.js options.js background.js content.js; do
+  [ -f "extension/chrome/$f" ] && cp "extension/chrome/$f" "extension/$f"
+ done 2>/dev/null || true
 
 # Embed browser extension bundle and brand assets into Resources
 echo "==> embed extension & brand resources"

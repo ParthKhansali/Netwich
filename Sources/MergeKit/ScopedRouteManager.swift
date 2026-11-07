@@ -29,8 +29,11 @@ public final class ScopedRouteManager: @unchecked Sendable {
         }
         self.stateFileURL = netwichFile
 
-        // Cleanup any leftover routes from previous crashes
-        cleanupStale()
+        // Cleanup any leftover routes from previous crashes. This is a no-op unless
+        // the process is privileged, so launching the app never prompts for a password.
+        if geteuid() == 0 {
+            cleanupStale()
+        }
     }
 
     /// Discovers the router gateway for a network interface.
@@ -149,26 +152,33 @@ public final class ScopedRouteManager: @unchecked Sendable {
     }
 
     /// Adds a scoped default route for the interface.
+    ///
+    /// macOS maintains these itself for non-primary interfaces in almost every setup.
+    /// We only touch the table when we already have the privilege to do so (`sudo -n`
+    /// would otherwise block on a password prompt at launch); otherwise we leave the
+    /// system's own routes alone and let `IP_BOUND_IF` use them.
     @discardableResult
     private func addScopedRoute(interface: String, gateway: String) -> Bool {
-        let args = ["-n", "/sbin/route", "-q", "-n", "add", "-inet", "default", gateway, "-ifscope", interface]
-        if let out = runCommand("/usr/bin/sudo", arguments: args) {
-            return !out.contains("failed")
-        }
-        let directArgs = ["-q", "-n", "add", "-inet", "default", gateway, "-ifscope", interface]
-        _ = runCommand("/sbin/route", arguments: directArgs)
+        guard geteuid() == 0 else { return hasScopedRoute(for: interface) }
+
+        let result = ProcessRunner.run(
+            "/sbin/route",
+            ["-q", "-n", "add", "-inet", "default", gateway, "-ifscope", interface],
+            timeout: 5
+        )
+        if result.succeeded { return true }
         return hasScopedRoute(for: interface)
     }
 
     /// Removes a scoped default route.
     @discardableResult
     private func removeScopedRoute(interface: String, gateway: String) -> Bool {
-        let args = ["-n", "/sbin/route", "-q", "-n", "delete", "-inet", "default", gateway, "-ifscope", interface]
-        if let _ = runCommand("/usr/bin/sudo", arguments: args) {
-            return true
-        }
-        let directArgs = ["-q", "-n", "delete", "-inet", "default", gateway, "-ifscope", interface]
-        return runCommand("/sbin/route", arguments: directArgs) != nil
+        guard geteuid() == 0 else { return false }
+        return ProcessRunner.run(
+            "/sbin/route",
+            ["-q", "-n", "delete", "-inet", "default", gateway, "-ifscope", interface],
+            timeout: 5
+        ).succeeded
     }
 
     // MARK: - State Persistence
@@ -197,21 +207,8 @@ public final class ScopedRouteManager: @unchecked Sendable {
     }
 
     private func runCommand(_ executable: String, arguments: [String]) -> String? {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: executable)
-        process.arguments = arguments
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            return String(data: data, encoding: .utf8)
-        } catch {
-            return nil
-        }
+        let result = ProcessRunner.run(executable, arguments, timeout: 8)
+        guard !result.timedOut else { return nil }
+        return result.output
     }
 }

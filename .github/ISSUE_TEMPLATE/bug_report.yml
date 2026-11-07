@@ -1,0 +1,67 @@
+name: Bug report
+description: Something in Netwich does not behave as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please do not include screenshots of private
+        download URLs or file paths you would rather not publish.
+  - type: input
+    id: version
+    attributes:
+      label: Netwich version
+      description: Shown at the bottom of the sidebar, or in the DMG filename.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and Mac model
+      placeholder: "macOS 15.1, MacBook Air M2"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Aggregation / proxy
+        - Downloads
+        - Browser extension
+        - Interface
+        - Packaging / install
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Turn aggregation on with Wi-Fi and a tethered phone
+        2. Start a download from ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: Include any message shown in the app.
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Console output, screenshots, whether the extension is loaded.
+    validations:
+      required: false

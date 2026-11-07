@@ -4,12 +4,36 @@ import Foundation
 import AppKit
 #endif
 
-/// Lightweight local HTTP server implementing Plexo's browser extension bridge protocol.
+/// Loopback HTTP bridge used by the Netwich browser extensions.
 ///
-/// Runs on 127.0.0.1:19288 (falling back to 19289, 19290) to seamlessly intercept and
-/// accelerate downloads directly from Chrome, Edge, Brave, and Firefox extensions.
+/// Runs on 127.0.0.1:19288 (falling back to 19289/19290) and speaks a small JSON
+/// protocol: `GET /ping`, `/status`, `POST /add`, `/confirm`, `/open`, and download
+/// controls.
+///
+/// ## Security model
+///
+/// A loopback HTTP server is reachable by *every* web page the user visits, so the
+/// protocol has to assume the caller is hostile until proven otherwise:
+///
+/// - **Origin allowlist.** Extension-origin requests (`chrome-extension://`,
+///   `moz-extension://`, `safari-web-extension://`) are accepted. A page-initiated
+///   request always carries an `http(s)://` origin, which is rejected with 403.
+///   The old code reflected *any* origin in `Access-Control-Allow-Origin`, which let a
+///   random site read the user's download history — including absolute file paths.
+/// - **No wildcard CORS.** The response only ever echoes a validated extension origin.
+/// - **Bounded parsing.** The request is read until the header terminator and then
+///   exactly `Content-Length` bytes, so large cookie payloads are not truncated.
+/// - **Bounded state.** Pending offers are capped so a hostile caller cannot grow the
+///   queue without limit.
 public final class BrowserBridgeServer: @unchecked Sendable {
     public static let standardPorts: [UInt16] = [19288, 19289, 19290]
+
+    enum Limits {
+        static let maxHeaderBytes = 32 * 1024
+        static let maxBodyBytes = 512 * 1024
+        static let maxPendingOffers = 32
+        static let offerTTL: TimeInterval = 30
+    }
 
     public struct BridgePing: Codable, Sendable {
         public let app: String
@@ -105,7 +129,7 @@ public final class BrowserBridgeServer: @unchecked Sendable {
             let thread = Thread { [weak self] in
                 self?.acceptLoop()
             }
-            thread.name = "dev.parth.merge.browserbridge"
+            thread.name = "dev.parth.netwich.browserbridge"
             thread.start()
             return true
         }
@@ -126,6 +150,7 @@ public final class BrowserBridgeServer: @unchecked Sendable {
         lock.unlock()
 
         if sock >= 0 {
+            shutdown(sock, SHUT_RDWR)
             close(sock)
         }
     }
@@ -157,257 +182,362 @@ public final class BrowserBridgeServer: @unchecked Sendable {
             }
 
             DispatchQueue.global(qos: .utility).async { [weak self] in
-                self?.handleHttpRequest(clientSock: clientSock)
+                self?.handleConnection(clientSock: clientSock)
             }
         }
     }
 
-    // MARK: - HTTP Handler
+    // MARK: - HTTP
 
-    private func handleHttpRequest(clientSock: Int32) {
+    private struct HTTPRequest {
+        var method: String
+        var path: String
+        var headers: [String: String]
+        var body: Data
+
+        var origin: String? { headers["origin"] }
+    }
+
+    private enum OriginVerdict {
+        case allowed(String?)
+        case rejected
+    }
+
+    /// Extension origins are trusted; web origins are not.
+    ///
+    /// Browsers attach `Origin` to every cross-origin fetch and form POST, so a page
+    /// cannot hide. Requests with no `Origin` at all come from native clients such as
+    /// the tests and `netwich://` handoffs.
+    private static func verifyOrigin(_ origin: String?) -> OriginVerdict {
+        guard let origin, !origin.isEmpty else { return .allowed(nil) }
+        let lower = origin.lowercased()
+        let extensionSchemes = ["chrome-extension://", "moz-extension://", "safari-web-extension://"]
+        if extensionSchemes.contains(where: { lower.hasPrefix($0) }) {
+            return .allowed(origin)
+        }
+        return .rejected
+    }
+
+    private func handleConnection(clientSock: Int32) {
         defer { close(clientSock) }
 
-        var buffer = [UInt8](repeating: 0, count: 16_384)
-        let bytesRead = recv(clientSock, &buffer, buffer.count, 0)
-        guard bytesRead > 0 else { return }
+        // Bound how long a single request may take so a stalled client cannot pin a thread.
+        var timeout = timeval(tv_sec: 10, tv_usec: 0)
+        setsockopt(clientSock, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
+        setsockopt(clientSock, SOL_SOCKET, SO_SNDTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
 
-        guard let requestString = String(bytes: buffer.prefix(bytesRead), encoding: .utf8) else {
+        guard let request = readRequest(from: clientSock) else {
+            send(socket: clientSock, status: "400 Bad Request", headers: "", body: Data())
             return
         }
 
-        let lines = requestString.components(separatedBy: "\r\n")
-        guard let firstLine = lines.first else { return }
-        let parts = firstLine.components(separatedBy: " ")
-        guard parts.count >= 2 else { return }
+        let verdict = Self.verifyOrigin(request.origin)
+        guard case .allowed(let echoOrigin) = verdict else {
+            // No CORS headers: the browser will also refuse to hand the body to the page.
+            send(socket: clientSock, status: "403 Forbidden", headers: "", body: Data("{\"error\":\"origin_not_allowed\"}".utf8))
+            return
+        }
 
-        let method = parts[0].uppercased()
-        let path = parts[1]
-        let cleanPath = path.components(separatedBy: "?").first ?? path
+        var cors = "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n"
+            + "Access-Control-Allow-Headers: Content-Type\r\n"
+            + "Access-Control-Max-Age: 600\r\n"
+            + "Access-Control-Allow-Private-Network: true\r\n"
+            + "Cache-Control: no-store\r\n"
+        if let echoOrigin {
+            cors += "Access-Control-Allow-Origin: \(echoOrigin)\r\nVary: Origin\r\n"
+        }
 
-        // Find Origin for CORS
-        var origin = "*"
-        for line in lines {
-            if line.lowercased().hasPrefix("origin:") {
-                origin = line.replacingOccurrences(of: "Origin:", with: "", options: .caseInsensitive).trimmingCharacters(in: .whitespaces)
+        if request.method == "OPTIONS" {
+            send(socket: clientSock, status: "204 No Content", headers: cors, body: Data())
+            return
+        }
+
+        switch (request.method, request.path) {
+        case ("GET", "/ping"):
+            let ping = BridgePing(app: "netwich", version: Self.appVersion, api: 1)
+            sendJSON(socket: clientSock, cors: cors, value: ping)
+
+        case ("GET", "/status"), ("GET", "/downloads"):
+            sendJSONString(socket: clientSock, cors: cors, json: statusJSON())
+
+        case ("GET", "/open"), ("POST", "/open"):
+            DispatchQueue.main.async { [weak self] in self?.openAppHandler?() }
+            sendJSONString(socket: clientSock, cors: cors, json: "{\"ok\":true}")
+
+        case ("POST", "/add"):
+            handleAdd(socket: clientSock, cors: cors, body: request.body)
+
+        case ("POST", "/confirm"):
+            handleConfirm(socket: clientSock, cors: cors, body: request.body)
+
+        case ("POST", "/downloads/open"), ("POST", "/downloads/reveal"),
+             ("POST", "/downloads/pause"), ("POST", "/downloads/resume"),
+             ("POST", "/downloads/cancel"):
+            handleDownloadAction(socket: clientSock, cors: cors, path: request.path, body: request.body)
+
+        case ("POST", "/downloads/clear"):
+            downloadManager.clearCompleted()
+            sendJSONString(socket: clientSock, cors: cors, json: "{\"ok\":true}")
+
+        default:
+            send(socket: clientSock, status: "404 Not Found", headers: cors, body: Data())
+        }
+    }
+
+    // MARK: - Endpoint handlers
+
+    private func handleAdd(socket clientSock: Int32, cors: String, body: Data) {
+        guard let req = try? JSONDecoder().decode(BridgeAddRequest.self, from: body),
+              let url = URL(string: req.url),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https" else {
+            sendJSONString(socket: clientSock, cors: cors, json: "{\"error\":\"invalid_url\"}")
+            return
+        }
+
+        let token = UUID().uuidString
+        lock.lock()
+        if pendingOffers.count >= Limits.maxPendingOffers {
+            // Drop the oldest offer rather than growing without bound.
+            if let oldest = pendingOffers.keys.first {
+                pendingOffers.removeValue(forKey: oldest)
             }
         }
+        pendingOffers[token] = req
+        lock.unlock()
 
-        let corsHeaders = """
-        Access-Control-Allow-Origin: \(origin)\r
-        Access-Control-Allow-Methods: GET, POST, OPTIONS\r
-        Access-Control-Allow-Headers: Content-Type\r
-        Access-Control-Max-Age: 86400\r\n
-        """
+        DispatchQueue.global().asyncAfter(deadline: .now() + Limits.offerTTL) { [weak self] in
+            guard let self else { return }
+            self.lock.lock()
+            self.pendingOffers.removeValue(forKey: token)
+            self.lock.unlock()
+        }
 
-        if method == "OPTIONS" {
-            let response = "HTTP/1.1 204 No Content\r\n\(corsHeaders)Content-Length: 0\r\n\r\n"
-            sendResponse(socket: clientSock, text: response)
+        sendJSON(socket: clientSock, cors: cors, value: BridgeAddResponse(token: token))
+    }
+
+    private func handleConfirm(socket clientSock: Int32, cors: String, body: Data) {
+        guard let req = try? JSONDecoder().decode(BridgeConfirmRequest.self, from: body) else {
+            sendJSONString(socket: clientSock, cors: cors, json: "{\"error\":\"invalid_request\"}")
             return
         }
 
-        if method == "GET" && cleanPath == "/ping" {
-            let ping = BridgePing(app: "netwich", version: "1.0.0", api: 1)
-            if let json = try? JSONEncoder().encode(ping), let jsonStr = String(data: json, encoding: .utf8) {
-                sendJsonResponse(socket: clientSock, corsHeaders: corsHeaders, json: jsonStr)
+        lock.lock()
+        let offer = pendingOffers.removeValue(forKey: req.token)
+        lock.unlock()
+
+        guard let offer, let url = URL(string: offer.url) else {
+            sendJSONString(socket: clientSock, cors: cors, json: "{\"error\":\"offer_expired\"}")
+            return
+        }
+
+        var cookieHeader: String?
+        if let cookies = offer.browser?.cookies, !cookies.isEmpty {
+            cookieHeader = cookies.map { "\($0.name)=\($0.value)" }.joined(separator: "; ")
+        }
+
+        downloadManager.addDownload(
+            url: url,
+            customFilename: offer.fileName,
+            userAgent: offer.browser?.userAgent,
+            referer: offer.browser?.referer ?? offer.pageUrl,
+            cookies: cookieHeader
+        )
+        sendJSONString(socket: clientSock, cors: cors, json: "{\"ok\":true}")
+    }
+
+    private func handleDownloadAction(socket clientSock: Int32, cors: String, path: String, body: Data) {
+        guard let json = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
+              let idString = json["id"] as? String,
+              let id = UUID(uuidString: idString) else {
+            sendJSONString(socket: clientSock, cors: cors, json: "{\"error\":\"invalid_request\"}")
+            return
+        }
+
+        switch path {
+        case "/downloads/open":
+            if let item = downloadManager.allDownloads.first(where: { $0.id == id }) {
+                #if canImport(AppKit)
+                DispatchQueue.main.async {
+                    let destination = item.destinationFileURL
+                    if FileManager.default.fileExists(atPath: destination.path) {
+                        NSWorkspace.shared.open(destination)
+                    }
+                }
+                #endif
             }
-            return
+        case "/downloads/reveal":
+            if let item = downloadManager.allDownloads.first(where: { $0.id == id }) {
+                #if canImport(AppKit)
+                DispatchQueue.main.async {
+                    let destination = item.destinationFileURL
+                    if FileManager.default.fileExists(atPath: destination.path) {
+                        NSWorkspace.shared.activateFileViewerSelecting([destination])
+                    } else {
+                        NSWorkspace.shared.activateFileViewerSelecting([item.destinationFolder])
+                    }
+                }
+                #endif
+            }
+        case "/downloads/pause":
+            downloadManager.pauseDownload(id: id)
+        case "/downloads/resume":
+            downloadManager.resumeDownload(id: id)
+        case "/downloads/cancel":
+            downloadManager.cancelDownload(id: id)
+        default:
+            break
         }
 
-        if method == "GET" && (cleanPath == "/status" || cleanPath == "/downloads") {
-            var data = statusProvider?() ?? [
-                "app": "netwich",
-                "version": "1.0.0",
-                "connected": true,
-                "speed": 0.0,
-                "activeFlows": 0
+        sendJSONString(socket: clientSock, cors: cors, json: "{\"ok\":true}")
+    }
+
+    private func statusJSON() -> String {
+        var data = statusProvider?() ?? [
+            "app": "netwich",
+            "version": Self.appVersion,
+            "connected": true,
+            "speedBytesPerSec": 0.0,
+            "activeConnections": 0
+        ]
+
+        let items = downloadManager.allDownloads.map { item -> [String: Any] in
+            var dict: [String: Any] = [
+                "id": item.id.uuidString,
+                "filename": item.filename,
+                "url": item.url.absoluteString,
+                "status": Self.statusSlug(item.status),
+                "statusTitle": item.status.title,
+                "isCompleted": item.status == .completed,
+                "progress": item.progress,
+                "downloadedBytes": item.downloadedBytes,
+                "totalBytes": item.totalBytes,
+                "speedBytesPerSec": item.speedBytesPerSec,
+                "destinationPath": item.destinationFileURL.path,
+                "addedDate": item.addedDate.timeIntervalSince1970
             ]
-
-            let allItems = downloadManager.allDownloads
-            let downloadsData: [[String: Any]] = allItems.map { item in
-                var dict: [String: Any] = [
-                    "id": item.id.uuidString,
-                    "filename": item.filename,
-                    "url": item.url.absoluteString,
-                    "status": String(describing: item.status).components(separatedBy: "(").first?.lowercased() ?? "unknown",
-                    "statusTitle": item.status.title,
-                    "isCompleted": item.status == .completed,
-                    "progress": item.progress,
-                    "downloadedBytes": item.downloadedBytes,
-                    "totalBytes": item.totalBytes,
-                    "speedBytesPerSec": item.speedBytesPerSec,
-                    "destinationPath": item.destinationFileURL.path,
-                    "addedDate": item.addedDate.timeIntervalSince1970
-                ]
-                if let eta = item.etaSeconds {
-                    dict["etaSeconds"] = eta
-                }
-                return dict
-            }
-            data["downloads"] = downloadsData
-
-            if let json = try? JSONSerialization.data(withJSONObject: data),
-               let jsonStr = String(data: json, encoding: .utf8) {
-                sendJsonResponse(socket: clientSock, corsHeaders: corsHeaders, json: jsonStr)
-            } else {
-                sendJsonResponse(socket: clientSock, corsHeaders: corsHeaders, json: "{\"connected\":true,\"downloads\":[]}")
-            }
-            return
+            if let eta = item.etaSeconds { dict["etaSeconds"] = eta }
+            return dict
         }
+        data["downloads"] = items
 
-        if (method == "GET" || method == "POST") && cleanPath == "/open" {
-            DispatchQueue.main.async { [weak self] in
-                self?.openAppHandler?()
-            }
-            sendJsonResponse(socket: clientSock, corsHeaders: corsHeaders, json: "{\"ok\":true}")
-            return
+        guard let json = try? JSONSerialization.data(withJSONObject: data) else {
+            return "{\"connected\":true,\"downloads\":[]}"
         }
-
-        // Extract body for POST requests
-        if method == "POST" {
-            var body = ""
-            if let bodyIndex = requestString.range(of: "\r\n\r\n") {
-                body = String(requestString[bodyIndex.upperBound...])
-            }
-
-            if cleanPath == "/add" {
-                if let bodyData = body.data(using: .utf8),
-                   let req = try? JSONDecoder().decode(BridgeAddRequest.self, from: bodyData),
-                   let _ = URL(string: req.url) {
-
-                    let token = UUID().uuidString
-                    lock.lock()
-                    pendingOffers[token] = req
-                    lock.unlock()
-
-                    // Auto expire after 30s
-                    DispatchQueue.global().asyncAfter(deadline: .now() + 30) { [weak self] in
-                        self?.lock.lock()
-                        self?.pendingOffers.removeValue(forKey: token)
-                        self?.lock.unlock()
-                    }
-
-                    let addResp = BridgeAddResponse(token: token)
-                    if let json = try? JSONEncoder().encode(addResp), let jsonStr = String(data: json, encoding: .utf8) {
-                        sendJsonResponse(socket: clientSock, corsHeaders: corsHeaders, json: jsonStr)
-                    }
-                    return
-                }
-            } else if cleanPath == "/confirm" {
-                if let bodyData = body.data(using: .utf8),
-                   let req = try? JSONDecoder().decode(BridgeConfirmRequest.self, from: bodyData) {
-
-                    lock.lock()
-                    let offer = pendingOffers.removeValue(forKey: req.token)
-                    lock.unlock()
-
-                    if let offer = offer, let url = URL(string: offer.url) {
-                        var cookieHeader: String? = nil
-                        if let cookies = offer.browser?.cookies, !cookies.isEmpty {
-                            cookieHeader = cookies.map { "\($0.name)=\($0.value)" }.joined(separator: "; ")
-                        }
-                        let referer = offer.browser?.referer ?? offer.pageUrl
-                        let userAgent = offer.browser?.userAgent
-
-                        downloadManager.addDownload(
-                            url: url,
-                            customFilename: offer.fileName,
-                            userAgent: userAgent,
-                            referer: referer,
-                            cookies: cookieHeader
-                        )
-                        sendJsonResponse(socket: clientSock, corsHeaders: corsHeaders, json: "{}")
-                        return
-                    }
-                }
-            } else if cleanPath == "/downloads/open" {
-                if let bodyData = body.data(using: .utf8),
-                   let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any],
-                   let idStr = json["id"] as? String,
-                   let uuid = UUID(uuidString: idStr),
-                   let item = downloadManager.allDownloads.first(where: { $0.id == uuid }) {
-                    #if canImport(AppKit)
-                    DispatchQueue.main.async {
-                        let dest = item.destinationFileURL
-                        if FileManager.default.fileExists(atPath: dest.path) {
-                            NSWorkspace.shared.open(dest)
-                        }
-                    }
-                    #endif
-                    sendJsonResponse(socket: clientSock, corsHeaders: corsHeaders, json: "{\"ok\":true}")
-                    return
-                }
-            } else if cleanPath == "/downloads/reveal" {
-                if let bodyData = body.data(using: .utf8),
-                   let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any],
-                   let idStr = json["id"] as? String,
-                   let uuid = UUID(uuidString: idStr),
-                   let item = downloadManager.allDownloads.first(where: { $0.id == uuid }) {
-                    #if canImport(AppKit)
-                    DispatchQueue.main.async {
-                        let dest = item.destinationFileURL
-                        if FileManager.default.fileExists(atPath: dest.path) {
-                            NSWorkspace.shared.activateFileViewerSelecting([dest])
-                        } else {
-                            NSWorkspace.shared.activateFileViewerSelecting([item.destinationFolder])
-                        }
-                    }
-                    #endif
-                    sendJsonResponse(socket: clientSock, corsHeaders: corsHeaders, json: "{\"ok\":true}")
-                    return
-                }
-            } else if cleanPath == "/downloads/pause" {
-                if let bodyData = body.data(using: .utf8),
-                   let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any],
-                   let idStr = json["id"] as? String,
-                   let uuid = UUID(uuidString: idStr) {
-                    downloadManager.pauseDownload(id: uuid)
-                    sendJsonResponse(socket: clientSock, corsHeaders: corsHeaders, json: "{\"ok\":true}")
-                    return
-                }
-            } else if cleanPath == "/downloads/resume" {
-                if let bodyData = body.data(using: .utf8),
-                   let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any],
-                   let idStr = json["id"] as? String,
-                   let uuid = UUID(uuidString: idStr) {
-                    downloadManager.resumeDownload(id: uuid)
-                    sendJsonResponse(socket: clientSock, corsHeaders: corsHeaders, json: "{\"ok\":true}")
-                    return
-                }
-            } else if cleanPath == "/downloads/cancel" {
-                if let bodyData = body.data(using: .utf8),
-                   let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any],
-                   let idStr = json["id"] as? String,
-                   let uuid = UUID(uuidString: idStr) {
-                    downloadManager.cancelDownload(id: uuid)
-                    sendJsonResponse(socket: clientSock, corsHeaders: corsHeaders, json: "{\"ok\":true}")
-                    return
-                }
-            } else if cleanPath == "/downloads/clear" {
-                downloadManager.clearCompleted()
-                sendJsonResponse(socket: clientSock, corsHeaders: corsHeaders, json: "{\"ok\":true}")
-                return
-            }
-        }
-
-        // Not Found
-        let notFound = "HTTP/1.1 404 Not Found\r\n\(corsHeaders)Content-Length: 0\r\n\r\n"
-        sendResponse(socket: clientSock, text: notFound)
+        return String(decoding: json, as: UTF8.self)
     }
 
-    private func sendJsonResponse(socket: Int32, corsHeaders: String, json: String) {
-        let jsonBytes = json.utf8.count
-        let response = """
-        HTTP/1.1 200 OK\r
-        \(corsHeaders)Content-Type: application/json\r
-        Content-Length: \(jsonBytes)\r\n\r
-        \(json)
-        """
-        sendResponse(socket: socket, text: response)
+    static func statusSlug(_ status: DownloadStatus) -> String {
+        switch status {
+        case .queued: return "queued"
+        case .probing: return "probing"
+        case .downloading: return "downloading"
+        case .paused: return "paused"
+        case .completed: return "completed"
+        case .failed: return "failed"
+        }
     }
 
-    private func sendResponse(socket: Int32, text: String) {
-        text.withCString { ptr in
-            _ = write(socket, ptr, strlen(ptr))
+    static var appVersion: String {
+        (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) ?? "1.0.0"
+    }
+
+    // MARK: - Wire format
+
+    private func readRequest(from socket: Int32) -> HTTPRequest? {
+        var buffer = Data()
+        var headerEnd: Range<Data.Index>?
+
+        while buffer.count < Limits.maxHeaderBytes {
+            guard let chunk = receive(socket: socket, max: 8 * 1024), !chunk.isEmpty else { break }
+            buffer.append(chunk)
+            if let range = buffer.range(of: Data("\r\n\r\n".utf8)) {
+                headerEnd = range
+                break
+            }
+        }
+
+        guard let headerEnd,
+              let head = String(data: buffer[..<headerEnd.lowerBound], encoding: .utf8) else {
+            return nil
+        }
+
+        var lines = head.components(separatedBy: "\r\n")
+        guard !lines.isEmpty else { return nil }
+        let requestLine = lines.removeFirst().components(separatedBy: " ")
+        guard requestLine.count >= 2 else { return nil }
+
+        var headers: [String: String] = [:]
+        for line in lines {
+            guard let colon = line.firstIndex(of: ":") else { continue }
+            let key = line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
+            let value = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
+            headers[key] = value
+        }
+
+        var body = Data(buffer[headerEnd.upperBound...])
+        let expected = Int(headers["content-length"] ?? "0") ?? 0
+        if expected > Limits.maxBodyBytes { return nil }
+
+        while body.count < expected {
+            guard let chunk = receive(socket: socket, max: min(16 * 1024, expected - body.count)), !chunk.isEmpty else { break }
+            body.append(chunk)
+        }
+
+        let rawPath = requestLine[1]
+        let path = rawPath.components(separatedBy: "?").first ?? rawPath
+
+        return HTTPRequest(
+            method: requestLine[0].uppercased(),
+            path: path,
+            headers: headers,
+            body: body
+        )
+    }
+
+    private func receive(socket: Int32, max: Int) -> Data? {
+        var buffer = [UInt8](repeating: 0, count: max)
+        let count = recv(socket, &buffer, max, 0)
+        guard count > 0 else { return nil }
+        return Data(buffer[0..<count])
+    }
+
+    private func sendJSON<T: Encodable>(socket: Int32, cors: String, value: T) {
+        let encoder = JSONEncoder()
+        guard let data = try? encoder.encode(value),
+              let json = String(data: data, encoding: .utf8) else {
+            sendJSONString(socket: socket, cors: cors, json: "{}")
+            return
+        }
+        sendJSONString(socket: socket, cors: cors, json: json)
+    }
+
+    private func sendJSONString(socket: Int32, cors: String, json: String) {
+        send(
+            socket: socket,
+            status: "200 OK",
+            headers: cors + "Content-Type: application/json; charset=utf-8\r\n",
+            body: Data(json.utf8)
+        )
+    }
+
+    private func send(socket: Int32, status: String, headers: String, body: Data) {
+        var response = "HTTP/1.1 \(status)\r\n"
+        response += headers
+        response += "Content-Length: \(body.count)\r\n"
+        response += "Connection: close\r\n\r\n"
+
+        var payload = Data(response.utf8)
+        payload.append(body)
+
+        payload.withUnsafeBytes { raw in
+            guard let base = raw.baseAddress else { return }
+            var sent = 0
+            while sent < payload.count {
+                let written = Darwin.send(socket, base.advanced(by: sent), payload.count - sent, 0)
+                if written <= 0 { return }
+                sent += written
+            }
         }
     }
 }

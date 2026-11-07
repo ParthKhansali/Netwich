@@ -1,13 +1,12 @@
 import AppKit
-import SwiftUI
 import MergeKit
+import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     var appState: AppState?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApplication.shared.setActivationPolicy(.regular)
-        NSApplication.shared.activate(ignoringOtherApps: true)
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -20,8 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        // Restores the user's original proxy configuration on the way out.
         appState?.cleanupOnQuit()
-        SystemProxyManager.emergencyDisableAll()
     }
 }
 
@@ -33,58 +32,37 @@ struct NetwichApp: App {
     var body: some Scene {
         WindowGroup {
             RootView(state: state)
-                .frame(minWidth: 880, minHeight: 600)
-                .onAppear {
-                    appDelegate.appState = state
-                    NSApplication.shared.setActivationPolicy(.regular)
-                    NSApplication.shared.activate(ignoringOtherApps: true)
-                }
-                .onOpenURL { url in
-                    NSApplication.shared.activate(ignoringOtherApps: true)
-                    for window in NSApplication.shared.windows {
-                        window.makeKeyAndOrderFront(nil)
-                    }
-                    if url.scheme == "netwich" || url.scheme == "merge" {
-                        if url.host == "download" || url.path.contains("download") {
-                            if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-                               let targetUrlStr = components.queryItems?.first(where: { $0.name == "url" })?.value,
-                               let targetUrl = URL(string: targetUrlStr) {
-                                state.addDownload(url: targetUrl)
-                            }
-                        }
-                    }
-                }
+                .onAppear { appDelegate.appState = state }
+                .onOpenURL(perform: handleURL)
         }
+        .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
-        .defaultSize(width: 1020, height: 720)
+        .defaultSize(width: 1140, height: 780)
         .commands {
             CommandGroup(replacing: .newItem) {
-                Button("New Download...") {
+                Button("New Download…") {
                     NotificationCenter.default.post(name: .openNewDownloadSheet, object: nil)
                 }
                 .keyboardShortcut("n", modifiers: .command)
 
-                Button("Resume All Downloads") {
-                    state.resumeAllDownloads()
-                }
-                .keyboardShortcut("r", modifiers: [.command, .option])
+                Button("Resume All Downloads") { state.resumeAllDownloads() }
+                    .keyboardShortcut("r", modifiers: [.command, .option])
 
-                Button("Pause All Downloads") {
-                    state.pauseAllDownloads()
-                }
-                .keyboardShortcut("p", modifiers: [.command, .option])
+                Button("Pause All Downloads") { state.pauseAllDownloads() }
+                    .keyboardShortcut("p", modifiers: [.command, .option])
 
                 Divider()
 
-                Button("Open Downloads Folder") {
-                    state.openDefaultDownloadFolder()
-                }
-                .keyboardShortcut("o", modifiers: [.command, .shift])
+                Button("Open Downloads Folder") { state.openDefaultDownloadFolder() }
+                    .keyboardShortcut("o", modifiers: [.command, .shift])
+            }
 
-                Button("Clear Completed Downloads") {
-                    state.clearCompletedDownloads()
+            CommandMenu("Aggregation") {
+                Button(state.isOn ? "Pause Aggregation" : "Start Aggregation") {
+                    Task { await state.setOn(!state.isOn) }
                 }
-                .keyboardShortcut("k", modifiers: [.command, .shift])
+                .keyboardShortcut("a", modifiers: [.command, .shift])
+                .disabled(state.phase == .activating)
             }
         }
 
@@ -92,51 +70,54 @@ struct NetwichApp: App {
             MenuBarView(state: state)
         } label: {
             HStack(spacing: 4) {
-                menuBarIconView
-                if state.isOn && state.currentDownloadSpeedBytesPerSec > 50_000 {
+                Image(systemName: state.isOn ? "square.stack.3d.up.fill" : "square.stack.3d.up")
+                if state.isOn, state.currentDownloadSpeedBytesPerSec > 50_000 {
                     Text(ByteFormat.rate(state.currentDownloadSpeedBytesPerSec))
-                        .font(.caption2.monospacedDigit())
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
                 }
             }
         }
         .menuBarExtraStyle(.window)
 
         Settings {
-            SettingsView(state: state)
-                .frame(width: 580, height: 500)
+            ZStack {
+                AuroraBackdrop(isActive: state.isOn)
+                SettingsView(state: state)
+            }
+            .frame(width: 660, height: 680)
         }
     }
 
-    @ViewBuilder
-    private var menuBarIconView: some View {
-        if let template = loadMenuBarIcon() {
-            Image(nsImage: template)
-        } else {
-            Image(systemName: state.isOn ? "square.stack.3d.up.fill" : "network")
+    /// `netwich://download?url=…` and the legacy `merge://` scheme.
+    private func handleURL(_ url: URL) {
+        state.activateWindow()
+
+        guard url.scheme == "netwich" || url.scheme == "merge" else { return }
+
+        // netwich://tab/<overview|downloads|history|browser|tethering|settings>
+        if url.host == "tab" {
+            let name = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            NotificationCenter.default.post(name: .selectTab, object: name.isEmpty ? "overview" : name)
+            return
         }
-    }
 
-    private func loadMenuBarIcon() -> NSImage? {
-        let candidate: NSImage? = {
-            if let path = Bundle.main.path(forResource: "netwichTemplate", ofType: "png") {
-                return NSImage(contentsOfFile: path)
-            }
-            if let named = NSImage(named: "netwichTemplate") ?? Bundle.main.image(forResource: "netwichTemplate") {
-                return named
-            }
-            if let res = Bundle.main.resourcePath {
-                return NSImage(contentsOfFile: res + "/netwichTemplate.png")
-            }
-            return nil
-        }()
+        if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+           let raw = components.queryItems?.first(where: { $0.name == "url" })?.value,
+           let target = URL(string: raw),
+           let scheme = target.scheme?.lowercased(),
+           scheme == "http" || scheme == "https" {
+            state.addDownload(url: target)
+            return
+        }
 
-        guard let img = candidate else { return nil }
-        img.isTemplate = true
-        img.size = NSSize(width: 18, height: 18)
-        return img
+        // `netwich://open` just brings the window forward.
+        if url.host == "open" || url.path.isEmpty {
+            state.activateWindow()
+        }
     }
 }
 
 extension Notification.Name {
-    static let openNewDownloadSheet = Notification.Name("dev.parth.merge.openNewDownload")
+    static let openNewDownloadSheet = Notification.Name("dev.parth.netwich.openNewDownload")
+    static let selectTab = Notification.Name("dev.parth.netwich.selectTab")
 }

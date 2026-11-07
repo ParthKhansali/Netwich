@@ -1,5 +1,6 @@
 .DS_Store
 build/
+dist/
 .build/
 DerivedData/
 *.xcodeproj
@@ -9,6 +10,9 @@ DerivedData/
 .swiftpm/
 graphify-out/
 xcuserdata/
+*.dmg
+*.zip
+docs/screenshots/preview-*
 .env
 .env.*
 *.provisionprofile

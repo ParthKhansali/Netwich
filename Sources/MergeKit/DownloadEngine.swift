@@ -34,6 +34,9 @@ public enum DownloadError: LocalizedError, Sendable {
     case httpError(statusCode: Int, message: String)
     case cancelled
     case serverRejectedRanges
+    case incompleteTransfer(expected: Int64, actual: Int64)
+    case insufficientDiskSpace(required: Int64, available: Int64)
+    case remoteFileChanged
 
     public var errorDescription: String? {
         switch self {
@@ -45,6 +48,12 @@ public enum DownloadError: LocalizedError, Sendable {
             return "Download cancelled"
         case .serverRejectedRanges:
             return "Server rejected byte range requests"
+        case .incompleteTransfer(let expected, let actual):
+            return "Transfer stopped early: got \(ByteCountFormatter.string(fromByteCount: actual, countStyle: .file)) of \(ByteCountFormatter.string(fromByteCount: expected, countStyle: .file))"
+        case .insufficientDiskSpace(let required, let available):
+            return "Not enough free space: need \(ByteCountFormatter.string(fromByteCount: required, countStyle: .file)), \(ByteCountFormatter.string(fromByteCount: available, countStyle: .file)) available"
+        case .remoteFileChanged:
+            return "The file changed on the server. Restart to download the new version."
         }
     }
 }
@@ -182,13 +191,30 @@ public final class DownloadItem: @unchecked Sendable, Identifiable {
         self.id = id
         self.url = url
         self.destinationFolder = destinationFolder
-        self.filename = filename ?? url.lastPathComponent
-        if self.filename.isEmpty || self.filename == "/" {
-            self.filename = "download_\(id.uuidString.prefix(8))"
-        }
+        self.filename = Self.sanitizeName(
+            filename ?? url.lastPathComponent,
+            fallback: "download_\(id.uuidString.prefix(8))"
+        )
         self.userAgent = userAgent
         self.referer = referer
         self.cookies = cookies
+    }
+
+    /// Turns an untrusted name (URL path, `Content-Disposition`, or a value forwarded
+    /// by the browser extension) into a single safe path component.
+    ///
+    /// Without this, a name like `../../Library/LaunchAgents/x.plist` — trivially
+    /// supplied by a hostile server or page — would write outside the download folder.
+    static func sanitizeName(_ raw: String, fallback: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lastComponent = (trimmed as NSString).lastPathComponent
+        let cleaned = lastComponent
+            .replacingOccurrences(of: ":", with: "-")
+            .replacingOccurrences(of: "\0", with: "")
+        if cleaned.isEmpty || cleaned == "." || cleaned == ".." || cleaned == "/" {
+            return fallback
+        }
+        return String(cleaned.prefix(200))
     }
 
     func cancelTasks() {
@@ -230,19 +256,37 @@ public final class DownloadItem: @unchecked Sendable, Identifiable {
     }
 }
 
+/// Writes a chunk at an explicit offset.
+///
+/// `seek` + `write` needs a lock because the file offset is shared state, which
+/// serialises every chunk's writes into one queue. `pwrite` takes the offset per call
+/// and is atomic at the kernel level, so parallel chunks write truly in parallel.
 final class ChunkFileWriter: @unchecked Sendable {
-    private let handle: FileHandle
-    private let lock = NSLock()
+    private let descriptor: Int32
 
     init(handle: FileHandle) {
-        self.handle = handle
+        self.descriptor = handle.fileDescriptor
     }
 
     func write(offset: UInt64, data: Data) throws {
-        lock.lock()
-        defer { lock.unlock() }
-        try handle.seek(toOffset: offset)
-        try handle.write(contentsOf: data)
+        guard !data.isEmpty else { return }
+        try data.withUnsafeBytes { raw in
+            guard let base = raw.baseAddress else { return }
+            var written = 0
+            while written < data.count {
+                let count = pwrite(
+                    descriptor,
+                    base.advanced(by: written),
+                    data.count - written,
+                    off_t(offset) + off_t(written)
+                )
+                if count <= 0 {
+                    if errno == EINTR { continue }
+                    throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+                }
+                written += count
+            }
+        }
     }
 }
 
@@ -586,8 +630,16 @@ public final class DownloadManager: @unchecked Sendable {
 
     public func clearCompleted() {
         managerLock.lock()
+        let removed = downloads.filter { $0.value.status == .completed }.map(\.value)
         downloads = downloads.filter { $0.value.status != .completed }
         managerLock.unlock()
+
+        // Removing the row must not leave orphaned part/metadata files behind.
+        for item in removed {
+            try? FileManager.default.removeItem(at: item.partFileURL)
+            try? FileManager.default.removeItem(at: item.metaFileURL)
+        }
+
         saveHistory()
         notifyChange()
     }
@@ -624,11 +676,25 @@ public final class DownloadManager: @unchecked Sendable {
             do {
                 // Step 1: Probe URL
                 let probe = try await self.probe(item: item)
+                // A resumed transfer is only valid against the same bytes. If the ETag
+                // or the length moved, the old chunk map points at the wrong offsets and
+                // would produce a corrupt file, so start clean instead.
+                let hasProgress = item.downloadedBytes > 0 || item.chunks.contains { $0.downloadedBytes > 0 }
+                if hasProgress {
+                    let etagChanged = probe.etag != nil && item.etag != nil && probe.etag != item.etag
+                    let sizeChanged = probe.contentLength > 0 && item.totalBytes > 0 && probe.contentLength != item.totalBytes
+                    if etagChanged || sizeChanged {
+                        try? FileManager.default.removeItem(at: item.partFileURL)
+                        item.chunks.removeAll()
+                        item.downloadedBytes = 0
+                    }
+                }
+
                 item.totalBytes = probe.contentLength
                 item.supportsRanges = probe.supportsRanges
                 item.etag = probe.etag
                 if let name = probe.suggestedFilename, !name.isEmpty, item.filename.hasPrefix("download_") {
-                    item.filename = name
+                    item.filename = DownloadItem.sanitizeName(name, fallback: item.filename)
                 }
 
                 // If file is already completed
@@ -694,6 +760,8 @@ public final class DownloadManager: @unchecked Sendable {
     // MARK: - Parallel Chunk Downloader
 
     private func downloadParallel(item: DownloadItem, concurrency: Int) async throws {
+        try ensureDiskSpace(for: item)
+
         // Prepare part file
         let partPath = item.partFileURL.path
         if !FileManager.default.fileExists(atPath: partPath) {
@@ -869,6 +937,15 @@ public final class DownloadManager: @unchecked Sendable {
             }
         }
 
+        // Retries exhausted. Reporting success here would mark the chunk complete and
+        // finalise a truncated file, so fail loudly and let the caller fall back.
+        guard localChunk.downloadedBytes >= localChunk.totalBytes else {
+            throw DownloadError.incompleteTransfer(
+                expected: localChunk.totalBytes,
+                actual: localChunk.downloadedBytes
+            )
+        }
+
         return localChunk.downloadedBytes
     }
 
@@ -961,6 +1038,15 @@ public final class DownloadManager: @unchecked Sendable {
     }
 
     private func finalizeDownload(item: DownloadItem) throws {
+        // Verify the bytes on disk before promoting the part file. A short file that is
+        // renamed to its final name is indistinguishable from success later on.
+        if item.totalBytes > 0 {
+            let onDisk = (try? FileManager.default.attributesOfItem(atPath: item.partFileURL.path)[.size] as? Int64) ?? 0
+            guard onDisk == item.totalBytes else {
+                throw DownloadError.incompleteTransfer(expected: item.totalBytes, actual: onDisk)
+            }
+        }
+
         let dest = item.destinationFileURL
         if FileManager.default.fileExists(atPath: dest.path) {
             try FileManager.default.removeItem(at: dest)
@@ -982,6 +1068,18 @@ public final class DownloadManager: @unchecked Sendable {
         public var supportsRanges: Bool
         public var etag: String?
         public var suggestedFilename: String?
+    }
+
+    /// Refuses a download that cannot possibly fit, instead of letting a sparse part
+    /// file fill the volume halfway through.
+    private func ensureDiskSpace(for item: DownloadItem) throws {
+        guard item.totalBytes > 0 else { return }
+        let values = try? item.destinationFolder.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
+        guard let available = values?.volumeAvailableCapacityForImportantUsage, available > 0 else { return }
+        let required = item.totalBytes - item.downloadedBytes + 32 * 1024 * 1024
+        guard Int64(available) >= required else {
+            throw DownloadError.insufficientDiskSpace(required: required, available: Int64(available))
+        }
     }
 
     private func probe(item: DownloadItem) async throws -> ProbeInfo {
@@ -1031,16 +1129,11 @@ public final class DownloadManager: @unchecked Sendable {
                 getReq.setValue(cookies, forHTTPHeaderField: "Cookie")
             }
 
-            do {
-                let (_, res) = try await session.data(for: getReq)
-                if let httpRes = res as? HTTPURLResponse {
-                    response = httpRes
-                }
-            } catch {
+            if let httpRes = await headerOnlyResponse(for: getReq, session: session) {
+                response = httpRes
+            } else if let (_, res) = try? await session.data(for: headReq), let httpRes = res as? HTTPURLResponse {
                 // If bytes probe failed, retry once more with plain request
-                if let (_, res) = try? await session.data(for: headReq), let httpRes = res as? HTTPURLResponse {
-                    response = httpRes
-                }
+                response = httpRes
             }
         }
 
@@ -1077,8 +1170,7 @@ public final class DownloadManager: @unchecked Sendable {
             if let ref = item.referer, !ref.isEmpty { rangeCheck.setValue(ref, forHTTPHeaderField: "Referer") }
             if let cookies = item.cookies, !cookies.isEmpty { rangeCheck.setValue(cookies, forHTTPHeaderField: "Cookie") }
 
-            if let (_, rangeRes) = try? await session.data(for: rangeCheck),
-               let rangeHttp = rangeRes as? HTTPURLResponse, rangeHttp.statusCode == 206 {
+            if let rangeHttp = await headerOnlyResponse(for: rangeCheck, session: session), rangeHttp.statusCode == 206 {
                 supportsRanges = true
             }
         }
@@ -1104,9 +1196,20 @@ public final class DownloadManager: @unchecked Sendable {
         )
     }
 
-    private func probe(url: URL) async throws -> ProbeInfo {
-        let tempItem = DownloadItem(url: url, destinationFolder: defaultDestination)
-        return try await probe(item: tempItem)
+    /// Issues a request and returns only its headers.
+    ///
+    /// `session.data(for:)` buffers the whole body. Against a server that ignores
+    /// `Range: bytes=0-0` that means reading an entire multi-gigabyte file into memory
+    /// just to read `Content-Length` — an instant out-of-memory crash. `bytes(for:)`
+    /// stops at the headers and cancels the transfer when the stream is dropped.
+    private func headerOnlyResponse(for request: URLRequest, session: URLSession) async -> HTTPURLResponse? {
+        do {
+            let (stream, response) = try await session.bytes(for: request)
+            withExtendedLifetime(stream) {} // releasing the stream cancels the body
+            return response as? HTTPURLResponse
+        } catch {
+            return nil
+        }
     }
 
     // MARK: - State Persistence & Speed Calculation

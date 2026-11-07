@@ -8,6 +8,7 @@ public enum LocalProxyError: Error, LocalizedError {
     case unsupportedCommand
     case connectionFailed(String)
     case hostResolutionFailed
+    case interfaceBindFailed(String, Int32)
 
     public var errorDescription: String? {
         switch self {
@@ -16,6 +17,8 @@ public enum LocalProxyError: Error, LocalizedError {
         case .unsupportedCommand: return "Command not supported"
         case .connectionFailed(let host): return "Connection to \(host) failed"
         case .hostResolutionFailed: return "Failed to resolve host"
+        case .interfaceBindFailed(let name, let code):
+            return "Could not bind traffic to \(name) (errno \(code))"
         }
     }
 }
@@ -29,8 +32,13 @@ public final class LocalProxyServer: @unchecked Sendable {
     public struct Config: Sendable {
         public var port: UInt16 = 1080
         public var host: String = "127.0.0.1"
+        /// 32 KiB per direction is still far above any single TCP read we need,
+        /// and halves the worst-case memory held by the flow table.
         public var bufferSize: Int = 32_768
         public var connectionTimeoutSeconds: Int = 10
+        /// Ceiling on simultaneous client connections. Without it a single buggy
+        /// client can spin up thousands of blocking threads.
+        public var maxConnections: Int = 1_024
 
         public init(port: UInt16 = 1080, host: String = "127.0.0.1") {
             self.port = port
@@ -64,6 +72,7 @@ public final class LocalProxyServer: @unchecked Sendable {
     private var bytesRxByLink: [String: UInt64] = [:]
     private var bytesTxByLink: [String: UInt64] = [:]
     private var activeFlowsByLink: [String: Int] = [:]
+    private var liveSockets: Set<Int32> = []
 
     public init(config: Config = Config(), scheduler: Scheduler) {
         self.config = config
@@ -127,7 +136,15 @@ public final class LocalProxyServer: @unchecked Sendable {
         addr.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
         addr.sin_family = sa_family_t(AF_INET)
         addr.sin_port = config.port.bigEndian
-        addr.sin_addr.s_addr = inet_addr(config.host)
+
+        // Validate the bind address instead of trusting inet_addr's INADDR_NONE.
+        var parsed = in_addr()
+        guard inet_pton(AF_INET, config.host, &parsed) == 1 else {
+            close(sock)
+            stateLock.unlock()
+            throw LocalProxyError.posix(EINVAL, "invalid bind address \(config.host)")
+        }
+        addr.sin_addr = parsed
 
         let bindRes = withUnsafePointer(to: &addr) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
@@ -142,7 +159,7 @@ public final class LocalProxyServer: @unchecked Sendable {
             throw LocalProxyError.posix(err, "bind to \(config.host):\(config.port) failed")
         }
 
-        guard listen(sock, 512) == 0 else {
+        guard listen(sock, 1_024) == 0 else {
             let err = errno
             close(sock)
             stateLock.unlock()
@@ -170,11 +187,19 @@ public final class LocalProxyServer: @unchecked Sendable {
         isRunning = false
         let sock = serverSocket
         serverSocket = -1
+        let sockets = liveSockets
+        liveSockets.removeAll()
         stateLock.unlock()
 
         if sock >= 0 {
             shutdown(sock, SHUT_RDWR)
             close(sock)
+        }
+
+        // Wake every blocked pump so the process can exit promptly instead of
+        // waiting for an idle timeout.
+        for fd in sockets {
+            shutdown(fd, SHUT_RDWR)
         }
     }
 
@@ -210,8 +235,17 @@ public final class LocalProxyServer: @unchecked Sendable {
             #endif
 
             stateLock.lock()
+            if activeCount >= config.maxConnections {
+                stateLock.unlock()
+                // Refuse politely: 0x05 0x01 is the SOCKS5 "general failure" reply.
+                var reply: [UInt8] = [0x05, 0x01, 0x00, 0x01, 0, 0, 0, 0, 0, 0]
+                _ = reply.withUnsafeMutableBytes { write(clientSock, $0.baseAddress, 10) }
+                close(clientSock)
+                continue
+            }
             activeCount += 1
             totalCount += 1
+            liveSockets.insert(clientSock)
             stateLock.unlock()
 
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -227,6 +261,7 @@ public final class LocalProxyServer: @unchecked Sendable {
             close(clientSock)
             stateLock.lock()
             activeCount = max(0, activeCount - 1)
+            liveSockets.remove(clientSock)
             stateLock.unlock()
         }
 
@@ -520,24 +555,26 @@ public final class LocalProxyServer: @unchecked Sendable {
             var nosigpipe: Int32 = 1
             setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe, socklen_t(MemoryLayout<Int32>.size))
 
-            // Bind socket to physical interface via IP_BOUND_IF / IPV6_BOUND_IF
+            // Bind socket to physical interface via IP_BOUND_IF / IPV6_BOUND_IF.
+            // The bind is the entire feature: if it silently fails, traffic leaves over
+            // the default route and the user gets no aggregation and no explanation.
             if ifIndex > 0 {
                 var indexVar = ifIndex
                 let isV6 = info.ai_family == AF_INET6
                 let optName = isV6 ? IPV6_BOUND_IF : IP_BOUND_IF
                 let optLevel = isV6 ? IPPROTO_IPV6 : IPPROTO_IP
-                _ = setsockopt(sock, Int32(optLevel), Int32(optName), &indexVar, socklen_t(MemoryLayout<UInt32>.size))
+                if setsockopt(sock, Int32(optLevel), Int32(optName), &indexVar, socklen_t(MemoryLayout<UInt32>.size)) != 0 {
+                    let bindErrno = errno
+                    close(sock)
+                    lastError = bindErrno
+                    continue
+                }
             }
             #endif
 
             // Responsive non-blocking connect (2.0s timeout per candidate)
             let connected = nonBlockingConnect(sock: sock, addr: info.ai_addr, addrlen: info.ai_addrlen, timeoutSeconds: 2.0)
             if connected {
-                #if canImport(Darwin)
-                var normalTv = timeval(tv_sec: 15, tv_usec: 0)
-                setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &normalTv, socklen_t(MemoryLayout<timeval>.size))
-                setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &normalTv, socklen_t(MemoryLayout<timeval>.size))
-                #endif
                 return sock
             } else {
                 lastError = errno
@@ -599,11 +636,6 @@ public final class LocalProxyServer: @unchecked Sendable {
 
             let connected = nonBlockingConnect(sock: sock, addr: info.ai_addr, addrlen: info.ai_addrlen, timeoutSeconds: 3.0)
             if connected {
-                #if canImport(Darwin)
-                var normalTv = timeval(tv_sec: 15, tv_usec: 0)
-                setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &normalTv, socklen_t(MemoryLayout<timeval>.size))
-                setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &normalTv, socklen_t(MemoryLayout<timeval>.size))
-                #endif
                 return sock
             } else {
                 lastError = errno
@@ -636,9 +668,15 @@ public final class LocalProxyServer: @unchecked Sendable {
             fds[0].revents = 0
             fds[1].revents = 0
 
-            let pollRes = poll(&fds, 2, 15_000)
+            let pollRes = poll(&fds, 2, 30_000)
+            if pollRes == 0 {
+                // Idle connection. Keep it alive: SSH sessions, WebSockets and
+                // long-polling all sit quiet for far more than 30 seconds, and the old
+                // code tore them down after 15. Only a genuine stop request ends them.
+                if !isServerRunning { break }
+                continue
+            }
             guard pollRes > 0 else {
-                if pollRes == 0 { break } // Idle timeout (15s)
                 if errno == EINTR { continue }
                 break
             }
@@ -718,7 +756,9 @@ public final class LocalProxyServer: @unchecked Sendable {
     }
 
     private func writeExact(socket: Int32, data: [UInt8]) throws {
-        _ = writeExactSocket(socket, buffer: data, count: data.count)
+        guard writeExactSocket(socket, buffer: data, count: data.count) == data.count else {
+            throw LocalProxyError.posix(EPIPE, "write failed")
+        }
     }
 
     private func writeExactSocket(_ sock: Int32, buffer: [UInt8], count: Int) -> Int {

@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to publish (for example v0.1.0)
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      # Builds: dist/Netwich-<version>.dmg, Netwich-Extension-Chromium-<version>.zip,
+      # Netwich-Extension-Firefox-<version>.zip, Netwich-Extensions-<version>.zip.
+      - name: Build DMG and extension archives
+        run: ./Scripts/package.sh
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: Netwich ${{ github.event.inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          body: |
+            **Download**
+
+            | File | For |
+            | --- | --- |
+            | `Netwich-*.dmg` | The macOS app. Open it and drag Netwich into Applications. |
+            | `Netwich-Extension-Chromium-*.zip` | Chrome, Brave, Edge and Arc |
+            | `Netwich-Extension-Firefox-*.zip` | Firefox |
+
+            The build is ad-hoc signed. On first launch macOS may block it: open
+            **System Settings → Privacy & Security → Open Anyway**, or right-click the
+            app and choose **Open**. The app's onboarding links straight to that pane.
+
+            The browser extension is installed manually because no browser allows an app
+            to sideload one: unzip, enable Developer mode, then **Load unpacked**.
+          files: |
+            dist/*.dmg
+            dist/*.zip

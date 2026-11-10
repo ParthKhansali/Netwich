@@ -189,7 +189,7 @@ Measured on an Apple Silicon Mac with Netwich running:
 
 ## Author
 
-Crafted by **Parth Khansali** ([@ParthKhansali](https://github.com/ParthKhansali)).
+Crafted by **Parth Khansali** ([@ParthKhansali](https://github.com/ParthKhansali)) · [Case Study on parthkhansali.tech](https://www.parthkhansali.tech/projects/netwich/) · [Socket Engineering Notes](https://www.parthkhansali.tech/notes/netwich-socket-pitfalls/).
 
 ## License
 
